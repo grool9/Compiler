@@ -2,13 +2,19 @@
 #define __SYMBOL_TABLE_H__
 
 #define N 16384
+typedef enum { false, true } bool;
 
 struct Symbol{
-	char ID[30];
+	char name[30];
 	int type;
 	int addr;
+	struct Symbol* next;
 };
 
-struct Symbol table[N];
+struct Symbol* table[N];
+
+void initTable();
+void addElement(struct Symbol* sym);
+bool findElement(char* name);
 
 #endif
