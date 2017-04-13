@@ -1,4 +1,5 @@
 #include<stdio.h>
+#include<string.h>
 #include"symbol_table.h"
 
 //hash function
@@ -22,17 +23,19 @@ void initTable(){
 //add
 void addElement(struct Symbol* sym){
 	int pos=hash_pjw(sym->name);
+
 	sym->next=table[pos];
 	table[pos]=sym;
 }
 
 //find
-bool findElement(char* name){
+struct Symbol* lookupIDTable(char* name){
 	int pos=hash_pjw(name);
 	
 	struct Symbol* p=table[pos];
 	for(;p!=NULL;p=p->next){
-		if(strcmp(p->name, name)==0)return true;
+		if(strcmp(p->name, name)==0)break;
 	}
-	return false;
+
+	return p;
 }

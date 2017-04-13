@@ -1,22 +1,12 @@
 %{
-#include <stdio.h>
-#include <stdlib.h>
-#include<stdarg.h>//!!!!!
-
 #define YYSTYPE struct Node*
 
 #include "lex.yy.c"
 
-struct Node* root=NULL;
-struct Node* insert(char* type, int argc, ...);
-
 int pasterrline=0;
-char pasttext[LEN]="\0";
+//char pasttext[LEN]="\0";
 
 %}
-
-%token LOWER_THAN_ERR
-%token ERR
 
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
@@ -125,100 +115,11 @@ Args			:	Exp COMMA Args				{$$=insert("Args",3,$1,$2,$3);}
 %%
 yyerror(char* msg) {
 	isWrong = 1;
-	if(yylineno!=pasterrline||strcmp(yytext,pasttext)!=0){
+	if(yylineno!=pasterrline/*||strcmp(yytext,pasttext)!=0*/){
 		if(strlen(yytext)!=0)fprintf(stderr,"Error type B at Line %d: Unexpected token '%s'\n",yylineno,yytext);
 		else fprintf(stderr,"Error type B at Line %d: Unexpected $end\n",yylineno);
 		pasterrline=yylineno;
-		strcpy(pasttext,yytext);
+		//strcpy(pasttext,yytext);
 	}
-}
-
-int my_atoi(char* str){
-	if(strlen(str)==1||str[0]!='0'){//10
-		return atoi(str);
-	}
-	else if(str[0]=='0'&&(str[1]=='X'||str[1]=='x')){//16
-		int sum=0;
-		int i=2;
-		for(;str[i]!='\0';i++){
-			sum*=16;
-			if(isdigit(str[i]))sum+=str[i]-'0';
-			else if(isupper(str[i]))sum+=str[i]-'A'+10;
-			else sum+=str[i]-'a'+10;
-		}
-		return sum;
-	}
-	else{//8
-		int sum=0;
-		int i=1;
-		for(;str[i]!='\0';i++){
-			sum*=8;
-			sum+=str[i]-'0';
-		}
-		return sum;
-	}
-}
-
-void outputTree(struct Node* root,int n){
-	if(root==NULL)return;
-	
-	struct Node* p=root;
-	for(;p!=NULL;p=p->nextNeighbor){
-		int i=0;
-		for(;i<n;i++)printf("  ");
-		
-		if(!p->terminal){
-			printf("%s (%d)\n",p->type,p->lineno);
-		}
-		else {
-			printf("%s",p->type);
-			if(strcmp(p->type,"ID")==0){
-				printf(": %s", p->lexeme);
-			}
-			else if(strcmp(p->type, "TYPE")==0) {
-				printf(": %s", p->lexeme);
-			}
-			else if(strcmp(p->type, "INT")==0) {
-				printf(": %d", my_atoi(p->lexeme));//10
-			}
-			else if(strcmp(p->type, "FLOAT")==0) {
-				printf(": %f", atof(p->lexeme));
-			}
-			printf("\n");
-		}
-
-		outputTree(p->child,n+1);
-	}
-}
-struct Node* insert(char* type, int argc, ...){
-	struct Node* head=(struct Node*)malloc(sizeof(struct Node));
-	head->terminal=0;
-	head->type=(char*)malloc(sizeof(char)*LEN); 
-	head->lexeme=NULL;
-	strcpy(head->type,type);
-	head->child=NULL;
-	head->nextNeighbor=NULL;
-
-	struct Node* current=head;
-
-	va_list p;
-	va_start(p, argc);
-	current->child=va_arg(p, struct Node*);//not null
-	current=current->child;
-
-	head->lineno=current->lineno;
-
-	int i=1;
-	for(;i<argc;i++){
-		struct Node* temp=va_arg(p,struct Node*);
-		if(temp!=NULL){
-			current->nextNeighbor=temp;
-			current=current->nextNeighbor;
-		}
-	}
-	
-	va_end(p);
-
-	return head;
 }
 

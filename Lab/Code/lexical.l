@@ -2,16 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "syntax.tab.h"
-#define LEN 32
-
-	struct Node{
-		int terminal;
-		char* type;
-		char* lexeme;
-		int lineno;
-		struct Node* child;
-		struct Node* nextNeighbor;
-	};
+#include "tree.h"
 
 	int isWrong = 0;
 	void setVal(char*, char*);

@@ -1,9 +1,8 @@
 #include <stdio.h>
+#include "tree.h"
 
-extern struct Node* root;
 extern int isWrong;
 extern int yylineno;
-extern void outputTree(struct Node*, int n);
 extern void yyrestart(FILE*);
 extern void yyparse();
 
