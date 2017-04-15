@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "tree.h"
+#include "common.h"
 
 extern int isWrong;
 extern int yylineno;

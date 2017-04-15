@@ -2,7 +2,6 @@
 #define __SYMBOL_TABLE_H__
 
 #define N 16384
-typedef enum { false, true } bool;
 
 typedef struct Type_* Type;
 typedef struct FieldList_* FieldList;

@@ -1,6 +1,4 @@
-#include<stdio.h>
-#include<string.h>
-#include"symbol_table.h"
+#include "common.h"
 
 //hash function
 unsigned int hash_pjw(char* name){
