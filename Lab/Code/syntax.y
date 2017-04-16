@@ -33,102 +33,102 @@ int pasterrline=0;
 %left SEMI
 
 %%
-Program			:	ExtDefList					{$$=insert(_Program_,"Program",1,$1); root=$$;}
+Program			:	ExtDefList					{$$=insert(Program__ExtDefList,"Program",1,$1); root=$$;}
 				;
-ExtDefList		:	ExtDef ExtDefList			{$$=insert(_ExtDefList_,"ExtDefList",2,$1,$2);}
+ExtDefList		:	ExtDef ExtDefList			{$$=insert(ExtDefList__ExtDef_ExtDefList,"ExtDefList",2,$1,$2);}
 				|	/* empty */					{$$=NULL;}
 				;
-ExtDef			:	Specifier ExtDecList SEMI	{$$=insert(_ExtDef_,"ExtDef",3,$1,$2,$3);}
-				|	Specifier SEMI				{$$=insert(_ExtDef_,"ExtDef",2,$1,$2);}
-				|	Specifier FunDec CompSt		{$$=insert(_ExtDef_,"ExtDef",3,$1,$2,$3);}
+ExtDef			:	Specifier ExtDecList SEMI	{$$=insert(ExtDef__Specifier_ExtDecList_SEMI,"ExtDef",3,$1,$2,$3);}
+				|	Specifier SEMI				{$$=insert(ExtDef__Specifier_SEMI,"ExtDef",2,$1,$2);}
+				|	Specifier FunDec CompSt		{$$=insert(ExtDef__Specifier_FunDec_Compst,"ExtDef",3,$1,$2,$3);}
 				|	error SEMI					{yyerrok;}
 				|	Specifier error				{yyerrok;}
 				;
-ExtDecList		:	VarDec						{$$=insert(_ExtDecList_,"ExtDecList",1,$1);}
-				|	VarDec COMMA ExtDecList		{$$=insert(_ExtDecList_,"ExtDecList",3,$1,$2,$3);}
+ExtDecList		:	VarDec						{$$=insert(ExtDecList__VarDec,"ExtDecList",1,$1);}
+				|	VarDec COMMA ExtDecList		{$$=insert(ExtDecList__VarDec_COMMA_ExtDecList,"ExtDecList",3,$1,$2,$3);}
 				;
-Specifier		:	TYPE						{$$=insert(_Specifier_,"Specifier",1,$1);}
-				|	StructSpecifier				{$$=insert(_Specifier_,"Specifier",1,$1);}
+Specifier		:	TYPE						{$$=insert(Specifier__TYPE,"Specifier",1,$1);}
+				|	StructSpecifier				{$$=insert(Specifier__StructSpecifier,"Specifier",1,$1);}
 				;
-StructSpecifier	:	STRUCT OptTag LC DefList RC	{$$=insert(_StructSpecifier_,"StructSpecifier",5,$1,$2,$3,$4,$5);}
-				|	STRUCT Tag					{$$=insert(_StructSpecifier_,"StructSpecifier",2,$1,$2);}
+StructSpecifier	:	STRUCT OptTag LC DefList RC	{$$=insert(StructSpecifier__STRUCT_OptTag_LC_DefList_RC,"StructSpecifier",5,$1,$2,$3,$4,$5);}
+				|	STRUCT Tag					{$$=insert(StructSpecifier__STRUCT_Tag,"StructSpecifier",2,$1,$2);}
 				;
-OptTag			:	ID							{$$=insert(_OptTag_,"OptTag",1,$1);}
+OptTag			:	ID							{$$=insert(OptTag__ID,"OptTag",1,$1);}
 				|	/* empty */					{$$=NULL;}
 				;
-Tag				:	ID							{$$=insert(_Tag_,"Tag",1,$1);}
+Tag				:	ID							{$$=insert(Tag__ID,"Tag",1,$1);}
 				;
-VarDec			:	ID							{$$=insert(_VarDec_,"VarDec",1,$1);}
-				|	VarDec LB INT RB			{$$=insert(_VarDec_,"VarDec",4,$1,$2,$3,$4);}
+VarDec			:	ID							{$$=insert(VarDec__ID,"VarDec",1,$1);}
+				|	VarDec LB INT RB			{$$=insert(VarDec__VarDec_LB_int_RB,"VarDec",4,$1,$2,$3,$4);}
 				|	VarDec LB error RB			{yyerrok;}
 				;
-FunDec			:	ID LP VarList RP			{$$=insert(_FunDec_,"FunDec",4,$1,$2,$3,$4);}
-				|	ID LP RP					{$$=insert(_FunDec_,"FunDec",3,$1,$2,$3);}
+FunDec			:	ID LP VarList RP			{$$=insert(FunDec__ID_LP_VarList_RP,"FunDec",4,$1,$2,$3,$4);}
+				|	ID LP RP					{$$=insert(FunDec__ID_LP_RP,"FunDec",3,$1,$2,$3);}
 				|	error RP					{yyerrok;}
 				|	ID LP error					{yyerrok;}
 				;
-VarList			:	ParamDec COMMA VarList		{$$=insert(_VarList_,"VarList",3,$1,$2,$3);}
-				|	ParamDec					{$$=insert(_VarList_,"VarList",1,$1);}
+VarList			:	ParamDec COMMA VarList		{$$=insert(VarList__ParamDec_COMMA_VarList,"VarList",3,$1,$2,$3);}
+				|	ParamDec					{$$=insert(VarList__ParamDec,"VarList",1,$1);}
 				;
-ParamDec		:	Specifier VarDec			{$$=insert(_ParamDec_,"ParamDec",2,$1,$2);}
+ParamDec		:	Specifier VarDec			{$$=insert(ParamDec__Specifier_VarDec,"ParamDec",2,$1,$2);}
 				;
-CompSt			:	LC DefList StmtList RC		{$$=insert(_CompSt_,"CompSt",4,$1,$2,$3,$4);}
+CompSt			:	LC DefList StmtList RC		{$$=insert(	Compst__LC_DefList_StmtList_RC,"CompSt",4,$1,$2,$3,$4);}
 				; 
-StmtList		:	Stmt StmtList				{$$=insert(_StmtList_,"StmtList",2,$1,$2);}
+StmtList		:	Stmt StmtList				{$$=insert(StmtList__Stmt_StmtList,"StmtList",2,$1,$2);}
 				|	/* empty */					{$$=NULL;}
 				; 
-Stmt			:	Exp SEMI					{$$=insert(_Stmt_,"Stmt",2,$1,$2);}
-				|	CompSt						{$$=insert(_Stmt_,"Stmt",1,$1);}
-				|	RETURN Exp SEMI				{$$=insert(_Stmt_,"Stmt",3,$1,$2,$3);}
-				|	IF LP Exp RP Stmt	%prec LOWER_THAN_ELSE	{$$=insert(_Stmt_,"Stmt",5,$1,$2,$3,$4,$5);}
-				|	IF LP Exp RP Stmt ELSE Stmt	{$$=insert(_Stmt_,"Stmt",7,$1,$2,$3,$4,$5,$6,$7);}
-				|	WHILE LP Exp RP Stmt		{$$=insert(_Stmt_,"Stmt",5,$1,$2,$3,$4,$5);}
+Stmt			:	Exp SEMI					{$$=insert(Stmt__Exp_SEMI,"Stmt",2,$1,$2);}
+				|	CompSt						{$$=insert(Stmt__Compst,"Stmt",1,$1);}
+				|	RETURN Exp SEMI				{$$=insert(Stmt__RETURN_Exp_SEMI,"Stmt",3,$1,$2,$3);}
+				|	IF LP Exp RP Stmt	%prec LOWER_THAN_ELSE	{$$=insert(Stmt__IF_LP_Exp_RP_Stmt,"Stmt",5,$1,$2,$3,$4,$5);}
+				|	IF LP Exp RP Stmt ELSE Stmt	{$$=insert(Stmt__IF_LP_Exp_RP_Stmt_else_Stmt,"Stmt",7,$1,$2,$3,$4,$5,$6,$7);}
+				|	WHILE LP Exp RP Stmt		{$$=insert(Stmt__WHILE_LP_Exp_RP_Stmt,"Stmt",5,$1,$2,$3,$4,$5);}
 				|	error SEMI					{yyerrok;}
 				|	error						{}
 				;
-DefList			:	Def DefList					{$$=insert(_DefList_,"DefList",2,$1,$2);}
+DefList			:	Def DefList					{$$=insert(DefList__Def_DefList,"DefList",2,$1,$2);}
 				|	/* empty */					{$$=NULL;}
 				;
-Def				:	Specifier DecList SEMI		{$$=insert(_Def_,"Def",3,$1,$2,$3);}
+Def				:	Specifier DecList SEMI		{$$=insert(Def__Specifier_DecList_SEMI,"Def",3,$1,$2,$3);}
 				|	Specifier error SEMI		{yyerrok;}
 				|	Specifier DecList error		{yyerrok;}
 				;
-DecList			:	Dec							{$$=insert(_DecList_,"DecList",1,$1);}
-				|	Dec COMMA DecList			{$$=insert(_DecList_,"DecList",3,$1,$2,$3);}
+DecList			:	Dec							{$$=insert(DecList__Dec,"DecList",1,$1);}
+				|	Dec COMMA DecList			{$$=insert(DecList__Dec_COMMA_DecList,"DecList",3,$1,$2,$3);}
 				;
-Dec				:	VarDec						{$$=insert(_Dec_,"Dec",1,$1);}
-				|	VarDec ASSIGNOP Exp			{$$=insert(_Dec_,"Dec",3,$1,$2,$3);}
+Dec				:	VarDec						{$$=insert(Dec__VarDec,"Dec",1,$1);}
+				|	VarDec ASSIGNOP Exp			{$$=insert(Dec__VarDec_ASSIGNOP_Exp,"Dec",3,$1,$2,$3);}
 				;
-Exp				:	Exp ASSIGNOP Exp			{$$=insert(_Exp_,"Exp",3,$1,$2,$3);}
-				|	Exp AND Exp					{$$=insert(_Exp_,"Exp",3,$1,$2,$3);}
-				|	Exp OR	Exp					{$$=insert(_Exp_,"Exp",3,$1,$2,$3);}
-				|	Exp RELOP Exp				{$$=insert(_Exp_,"Exp",3,$1,$2,$3);}
-				|	Exp PLUS Exp				{$$=insert(_Exp_,"Exp",3,$1,$2,$3);}
-				|	Exp MINUS Exp				{$$=insert(_Exp_,"Exp",3,$1,$2,$3);}
-				|	Exp STAR Exp				{$$=insert(_Exp_,"Exp",3,$1,$2,$3);}
-				|	Exp DIV Exp					{$$=insert(_Exp_,"Exp",3,$1,$2,$3);}
-				|	LP Exp RP					{$$=insert(_Exp_,"Exp",3,$1,$2,$3);}
-				|	MINUS Exp	%prec UMINUS	{$$=insert(_Exp_,"Exp",2,$1,$2);}
-				|	NOT Exp						{$$=insert(_Exp_,"Exp",2,$1,$2);}
-				|	ID LP Args RP				{$$=insert(_Exp_,"Exp",4,$1,$2,$3,$4);}
-				|	ID LP RP					{$$=insert(_Exp_,"Exp",3,$1,$2,$3);}
-				|	Exp LB Exp RB				{$$=insert(_Exp_,"Exp",4,$1,$2,$3,$4);}
-				|	Exp DOT ID					{$$=insert(_Exp_,"Exp",3,$1,$2,$3);}
-				|	ID							{$$=insert(_Exp_,"Exp",1,$1); }
-				|	INT							{$$=insert(_Exp_,"Exp",1,$1); }
-				|	FLOAT						{$$=insert(_Exp_,"Exp",1,$1);}
+Exp				:	Exp ASSIGNOP Exp			{$$=insert(Exp__Exp_ASSIGNOP_Exp,"Exp",3,$1,$2,$3);}
+				|	Exp AND Exp					{$$=insert(Exp__Exp_AND_Exp,"Exp",3,$1,$2,$3);}
+				|	Exp OR	Exp					{$$=insert(Exp__Exp_OR_Exp,"Exp",3,$1,$2,$3);}
+				|	Exp RELOP Exp				{$$=insert(Exp__Exp_RELOP_Exp,"Exp",3,$1,$2,$3);}
+				|	Exp PLUS Exp				{$$=insert(Exp__Exp_PLUS_Exp,"Exp",3,$1,$2,$3);}
+				|	Exp MINUS Exp				{$$=insert(Exp__Exp_MINUS_Exp,"Exp",3,$1,$2,$3);}
+				|	Exp STAR Exp				{$$=insert(Exp__Exp_STAR_Exp,"Exp",3,$1,$2,$3);}
+				|	Exp DIV Exp					{$$=insert(Exp__Exp_DIV_Exp,"Exp",3,$1,$2,$3);}
+				|	LP Exp RP					{$$=insert(Exp__LP_Exp_RP,"Exp",3,$1,$2,$3);}
+				|	MINUS Exp	%prec UMINUS	{$$=insert(Exp__MINUS_Exp,"Exp",2,$1,$2);}
+				|	NOT Exp						{$$=insert(Exp__NOT_Exp,"Exp",2,$1,$2);}
+				|	ID LP Args RP				{$$=insert(Exp__ID_LP_Args_RP,"Exp",4,$1,$2,$3,$4);}
+				|	ID LP RP					{$$=insert(Exp__ID_LP_RP,"Exp",3,$1,$2,$3);}
+				|	Exp LB Exp RB				{$$=insert(Exp__Exp_LB_Exp_RB,"Exp",4,$1,$2,$3,$4);}
+				|	Exp DOT ID					{$$=insert(Exp__Exp_DOT_ID,"Exp",3,$1,$2,$3);}
+				|	ID							{$$=insert(Exp__ID,"Exp",1,$1); }
+				|	INT							{$$=insert(Exp__INT,"Exp",1,$1); }
+				|	FLOAT						{$$=insert(Exp__FLOAT,"Exp",1,$1);}
 				;
-Args			:	Exp COMMA Args				{$$=insert(_Args_,"Args",3,$1,$2,$3);}
-				|	Exp							{$$=insert(_Args_,"Args",1,$1);}
+Args			:	Exp COMMA Args				{$$=insert(Args__Exp_COMMA_Args,"Args",3,$1,$2,$3);}
+				|	Exp							{$$=insert(Args__Exp,"Args",1,$1);}
 				;
 %%
 yyerror(char* msg) {
 	isWrong = 1;
-	if(yylineno!=pasterrline/*||strcmp(yytext,pasttext)!=0*/){
-		if(strlen(yytext)!=0)fprintf(stderr,"Error type B at Line %d: Unexpected token '%s'\n",yylineno,yytext);
-		else fprintf(stderr,"Error type B at Line %d: Unexpected $end\n",yylineno);
+	if(yylineno!=pasterrline/*||stRCmp(yytext,pasttext)!=0*/){
+		if(strlen(yytext)!=0)fprintf(stderr,"Error type B at Line %d: UnExpected token '%s'\n",yylineno,yytext);
+		else fprintf(stderr,"Error type B at Line %d: UnExpected $end\n",yylineno);
 		pasterrline=yylineno;
-		//strcpy(pasttext,yytext);
+		//stRCpy(pasttext,yytext);
 	}
 }
 
@@ -167,20 +167,20 @@ void outputTree(struct Node* root,int n){
 		for(;i<n;i++)printf("  ");
 		
 		if(!p->terminal){
-			printf("%s (%d)\n",p->type,p->lineno);
+			printf("%s (%d)\n",p->token,p->lineno);
 		}
 		else {
-			printf("%s",p->type);
-			if(strcmp(p->type,"ID")==0){
+			printf("%s",p->token);
+			if(strcmp(p->token,"ID")==0){
 				printf(": %s", p->lexeme);
 			}
-			else if(strcmp(p->type, "TYPE")==0) {
+			else if(strcmp(p->token, "TYPE")==0) {
 				printf(": %s", p->lexeme);
 			}
-			else if(strcmp(p->type, "INT")==0) {
+			else if(strcmp(p->token, "INT")==0) {
 				printf(": %d", my_atoi(p->lexeme));//10
 			}
-			else if(strcmp(p->type, "FLOAT")==0) {
+			else if(strcmp(p->token, "FLOAT")==0) {
 				printf(": %f", atof(p->lexeme));
 			}
 			printf("\n");
@@ -190,16 +190,17 @@ void outputTree(struct Node* root,int n){
 	}
 }
 
-struct Node* insert(enum TypeNo no, char* type, int argc, ...){
+struct Node* insert(Rule rule, char* token, int argc, ...){
 	struct Node* head=(struct Node*)malloc(sizeof(struct Node));
 	head->terminal=0;
-	head->type=(char*)malloc(sizeof(char)*LEN); 
+	head->token=(char*)malloc(sizeof(char)*LEN); 
 	head->lexeme=NULL;
-	strcpy(head->type,type);
+	strcpy(head->token,token);
 	head->child=NULL;
 	head->nextSibling=NULL;
 
-	head->typeno=no;
+	//head->typeno=no;
+	head->rule = rule;
 
 	struct Node* current=head;
 

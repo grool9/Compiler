@@ -19,9 +19,14 @@ void initTable(){
 }
 
 //add
-void addElement(struct Symbol* sym){
-	int pos=hash_pjw(sym->name);
+void add2Table(struct Node* node){
+	int pos=hash_pjw(node->lexeme);
 
+	struct Symbol* sym = (struct Symbol*)malloc(sizeof(struct Symbol));
+	sym->name = (char*)malloc(LEN);
+	sym->type = (Type)malloc(sizeof(struct Type_));
+	strcmp(sym->name, node->lexeme);
+	*sym->type = *node->type;
 	sym->next=table[pos];
 	table[pos]=sym;
 }
