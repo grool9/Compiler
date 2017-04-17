@@ -2,6 +2,8 @@
 
 int semanticErrorCount = 0;
 
+void depthTraversal(struct Node* );
+void passType(struct Node*);
 void extdef__specifier_extdeclist_semi(struct Node*);
 void extdef__specifier_semi(struct Node*);
 void extdef__specifier_fundec_compst(struct Node*);
@@ -12,16 +14,16 @@ void semanticError(int lineno, char* msg) {
 	printf("[Error type %d] line : %d  %s\n", semanticErrorCount, lineno, msg);
 }
 
-// 从左到右深度优先遍历语法树
+// 遍历语法树
 void traversalTree(struct Node* root){
 	if(root==NULL)return;
 	
 	switch(root->rule){
-	case Program__ExtDefList:break;
-	case ExtDefList__ExtDef_ExtDefList:break;
-	case ExtDef__Specifier_ExtDecList_SEMI:extdef__specifier_extdeclist_semi(root);break; 
-	case ExtDef__Specifier_SEMI:extdef__specifier_semi(root);break;
-	case ExtDef__Specifier_FunDec_Compst:extdef__specifier_fundec_compst(root);break;
+	case ExtDef__Specifier_ExtDecList_SEMI:
+	case ExtDef__Specifier_FunDec_Compst:
+	case ParamDec__Specifier_VarDec:
+	case Def__Specifier_DecList_SEMI:passType(root);break;
+
 	case ExtDecList__VarDec:break;
 	case ExtDecList__VarDec_COMMA_ExtDecList:break;
 	case Specifier__TYPE:break;
@@ -36,17 +38,13 @@ void traversalTree(struct Node* root){
 	case FunDec__ID_LP_RP:break;
 	case VarList__ParamDec_COMMA_VarList:break;
 	case VarList__ParamDec:break;
-	case ParamDec__Specifier_VarDec:break; 
 	case Compst__LC_DefList_StmtList_RC:break; 
-	case StmtList__Stmt_StmtList:break;
 	case Stmt__Exp_SEMI:break;
 	case Stmt__Compst:break;
 	case Stmt__RETURN_Exp_SEMI:break; 
 	case Stmt__IF_LP_Exp_RP_Stmt:break; 
 	case Stmt__IF_LP_Exp_RP_Stmt_else_Stmt:break;
 	case Stmt__WHILE_LP_Exp_RP_Stmt:break;
-	case DefList__Def_DefList:break;
-	case Def__Specifier_DecList_SEMI:break;
 	case DecList__Dec:break;
 	case DecList__Dec_COMMA_DecList:break;
 	case Dec__VarDec:break;
@@ -71,20 +69,33 @@ void traversalTree(struct Node* root){
 	case Exp__FLOAT:break;
 	case Args__Exp_COMMA_Args:break;
 	case Args__Exp:break;
-	default:break;
+	default:depthTraversal(root);break;
 	}
 }
 
+//从左到右深度遍历
+void depthTraversal(struct Node* root) {
+	struct Node* child = root->child;
+	while(child!=NULL) {
+		traversalTree(child);
+		child = child->nextSibling;
+	}
+}
 
-void extdef__specifier_extdeclist_semi(struct Node* root) {
+void passType(struct Node* root) {
 	struct Node* specifier = root->child;
-	struct Node* extdeclist = specifier->nextSibling;
-	
+	struct Node* other = specifier->nextSibling;
 	traversalTree(specifier);
 
-	extdeclist->type = specifier->type;
-	traversalTree(extdeclist);
+	Type t= specifier->type;
+	while(other!=NULL) {
+		//inh
+		other->type = t;
+		traversalTree(other);
+		other = other->nextSibling;
+	}
 }
+
 
 void extdeclist__vardec(struct Node* root) {
 	struct Node* vardec = root->child;
@@ -107,7 +118,7 @@ void extdeclist__vardec_comma_extdeclist(struct Node* root) {
 void vardec__id(struct Node* root) {
 	struct Node* id = root->child;
 
-	add2Table(id);
+	addElement(id);
 }
 
 void vardec__vardec_lb_int_rb(struct Node* root) {
@@ -141,17 +152,3 @@ void specifier__type(struct Node* root) {
 	}
 }
 
-void extdef__specifier_semi(struct Node* root) {
-}
-void extdef__specifier_fundec_compst(struct Node* root) {
-	struct Node* specifier = root->child;
-	traversalTree(specifier);
-	
-	struct Node* fundec = specifier->nextSibling;
-	fundec->type = specifier->type;
-	traversalTree(fundec);	
-
-	struct Node* compst = fundec->nextSibling;
-	compst->type = specifier->type;
-	traversalTree(compst);
-}

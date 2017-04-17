@@ -19,14 +19,17 @@ void initTable(){
 }
 
 //add
-void add2Table(struct Node* node){
+void addElement(struct Node* node){
 	int pos=hash_pjw(node->lexeme);
 
 	struct Symbol* sym = (struct Symbol*)malloc(sizeof(struct Symbol));
-	sym->name = (char*)malloc(LEN);
-	sym->type = (Type)malloc(sizeof(struct Type_));
+
+	sym->name = (char*)malloc(LEN);//变量名称
+	sym->type = (Type)malloc(sizeof(struct Type_));//变量类型
+	
 	strcmp(sym->name, node->lexeme);
 	*sym->type = *node->type;
+
 	sym->next=table[pos];
 	table[pos]=sym;
 }
@@ -41,4 +44,8 @@ struct Symbol* lookupIDTable(char* name){
 	}
 
 	return p;
+}
+
+//delete
+void delElement(struct Node* node) {
 }

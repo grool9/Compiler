@@ -71,6 +71,5 @@ void setVal(char* token, char* lexeme){
 	yylval->child=NULL;
 	yylval->nextSibling=NULL;
 
-	//yylval->typeno=no;
 	yylval->rule = No_Rule;
 }

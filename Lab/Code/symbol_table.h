@@ -11,7 +11,6 @@ struct Symbol{
 	Type type;//pointer
 	int dimension;
 	int argc;
-	int value;
 	int addr;
 	struct Symbol* next;
 };
@@ -19,7 +18,8 @@ struct Symbol{
 struct Symbol* table[N];
 
 void initTable();
-void add2Table(struct Node* node);
+void addElement(struct Node* node);
 struct Symbol* lookupIDTable(char* name);
+void delElement(struct Node* node);
 
 #endif
