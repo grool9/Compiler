@@ -3,7 +3,6 @@
 int semanticErrorCount = 0;
 
 void depthTraversal(struct Node* );
-void __specifier_(struct Node*);
 
 void extdef__specifier_extdeclist_semi(struct Node*);
 void extdef__specifier_fundec_compst(struct Node*);
@@ -34,6 +33,7 @@ void declist__dec(struct Node*);
 void declist__dec_comma_declist(struct Node*);
 void dec__vardec(struct Node*);
 void dec__vardec_assignop_exp(struct Node*);
+void exp__id_lp_args_rp(struct Node*);
 void exp__id(struct Node*);
 
 // print error msg
@@ -87,7 +87,7 @@ void semanticAnalysis(struct Node* root){
 	//case Exp__LP_Exp_RP:break;
 	//case Exp__MINUS_Exp:break;
 	//case Exp__NOT_Exp:break;
-	//case Exp__ID_LP_Args_RP:break;
+	case Exp__ID_LP_Args_RP: exp__id_lp_args_rp(root); break;
 	//case Exp__ID_LP_RP:break;
 	//case Exp__Exp_LB_Exp_RB:break;
 	//case Exp__Exp_DOT_ID:break;
@@ -98,7 +98,7 @@ void semanticAnalysis(struct Node* root){
 	//case Args__Exp:break;
 	
 	default:depthTraversal(root);break;
-	}
+ 	}
 }
 
 //从左到右深度遍历
@@ -234,10 +234,16 @@ void tag__id(struct Node* root) {
 }
 
 void vardec__id(struct Node* root) {
-	struct Node* id = root->child;
-	
+	struct Node* id = root->child;	
 	id->type = root->type;
-	addElement(id);
+
+	// redefination
+	char* text = id->lexeme;
+	if(lookupIDTable(_VARIABLE_, text) !=NULL) {
+		printf("Error type 3 at Line %d: Redefined variable \"%s\"\n",root->lineno, text);
+	}
+	else addVariable(id);
+
 #ifdef DEBUG
 	printf("vardec__id:%s\n",id->lexeme);
 #endif
@@ -343,13 +349,25 @@ void exp__exp_assignop_exp(struct Node* root) {
 void exp__exp_and_exp(struct Node* root) {
 }
 
+void exp__id_lp_args_rp(struct Node* root) {
+	struct Node* id = root->child;
+
+	char* text = id->lexeme;
+
+	struct Symbol* sym = lookupIDTable(_FUNCTION_, text);
+	// 函数未定义
+	if(sym == NULL) {
+		printf("Error type 2 at Line %d: Undefined function \"%s\"\n", root->lineno, text);
+	}
+}
+
 void exp__id(struct Node* root) {
 	struct Node* id = root->child;
 
-	// check
+	// 符号未定义
 	char* text = id->lexeme;
-	if(lookupIDTable(text)==NULL) {
-		semanticError(root->lineno, text);
+	if(lookupIDTable(_VARIABLE_, text)==NULL) {
+		printf("Error type 1 at Line %d: Undefined variable \"%s\"\n", root->lineno, text);
 	}
 }
 

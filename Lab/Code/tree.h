@@ -86,14 +86,22 @@ struct FieldList_
 struct Node{
 	int terminal;
 	char* token;
-	char* lexeme;
+	char* lexeme;//name
 	int lineno;
 	struct Node* child;
 	struct Node* nextSibling;
 
+	// lab2
 	Rule rule;
-//	Type inh;
-	Type type;
+	union {
+		Type type;
+
+		struct {
+			int argc;
+			Type* argv;
+			Type retType;
+		};
+	};
 };
 
 // parse tree root
