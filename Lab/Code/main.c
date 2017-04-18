@@ -18,7 +18,9 @@ int main(int argc, char** argv) {
 	yyrestart(f);
 	yyparse();
 	
-	if(!isWrong)outputTree(root,0);
+	//if(!isWrong)outputTree(root,0);
+	initTable();
+	semanticAnalysis(root);
 
 	return 0;
 } 

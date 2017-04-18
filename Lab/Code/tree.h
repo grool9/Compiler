@@ -90,9 +90,9 @@ struct Node{
 	int lineno;
 	struct Node* child;
 	struct Node* nextSibling;
-	
+
 	Rule rule;
-	Type inh;
+//	Type inh;
 	Type type;
 };
 

@@ -22,13 +22,16 @@ void initTable(){
 void addElement(struct Node* node){
 	int pos=hash_pjw(node->lexeme);
 
+#ifdef DEBUG
+	printf("add element:%s\t pos:%d\n",node->lexeme,pos);
+#endif
+
 	struct Symbol* sym = (struct Symbol*)malloc(sizeof(struct Symbol));
 
 	sym->name = (char*)malloc(LEN);//变量名称
-	sym->type = (Type)malloc(sizeof(struct Type_));//变量类型
 	
-	strcmp(sym->name, node->lexeme);
-	*sym->type = *node->type;
+	strcpy(sym->name, node->lexeme);
+	sym->type = node->type;//变量类型
 
 	sym->next=table[pos];
 	table[pos]=sym;
@@ -37,9 +40,12 @@ void addElement(struct Node* node){
 //find
 struct Symbol* lookupIDTable(char* name){
 	int pos=hash_pjw(name);
-	
+#ifdef DEBUG
+	printf("look up:%s \t pos:%d\n", name, pos);
+#endif	
 	struct Symbol* p=table[pos];
 	for(;p!=NULL;p=p->next){
+		printf("%s\n",p->name);
 		if(strcmp(p->name, name)==0)break;
 	}
 

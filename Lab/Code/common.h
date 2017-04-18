@@ -8,5 +8,6 @@ typedef enum { false, true } bool;
 #include <stdlib.h>
 #include "tree.h"
 #include "symbol_table.h"
+#include "semantic.h"
 
 #endif
