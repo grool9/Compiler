@@ -100,6 +100,7 @@ struct Node{
 extern struct Node* root;
 
 // lab1
+int my_atoi(char* );
 struct Node* insert(Rule rule, char* type, int argc, ...);
 void outputTree(struct Node*, int n);
 
