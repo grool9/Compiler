@@ -38,6 +38,7 @@ void dec__vardec_assignop_exp(struct Node*);
 void exp__exp_assignop_exp(struct Node*);
 void exp__id_lp_args_rp(struct Node*);
 void exp__exp_op_exp(struct Node*);
+void exp__exp_lb_exp_rb(struct Node*);
 void exp__id(struct Node*);
 void exp__int(struct Node*);
 void exp__float(struct Node*);
@@ -70,7 +71,7 @@ void semanticAnalysis(struct Node* root){
 	case StmtList__Stmt_StmtList: stmtlist__stmt_stmtlist(root); break;
 	//case Stmt__Exp_SEMI:break;
 	//case Stmt__Compst:break;
-	case Stmt__RETURN_Exp_SEMI: printf("semantic root->retType==NULL:%d\n", root->retType ==NULL);stmt__return_exp_semi(root); break; 
+	case Stmt__RETURN_Exp_SEMI: stmt__return_exp_semi(root); break; 
 	//case Stmt__IF_LP_Exp_RP_Stmt:break; 
 	//case Stmt__IF_LP_Exp_RP_Stmt_else_Stmt:break;
 	//case Stmt__WHILE_LP_Exp_RP_Stmt:break;
@@ -92,7 +93,7 @@ void semanticAnalysis(struct Node* root){
 	//case Exp__NOT_Exp:break;
 	case Exp__ID_LP_Args_RP: exp__id_lp_args_rp(root); break;
 	//case Exp__ID_LP_RP:break;
-	//case Exp__Exp_LB_Exp_RB:break;
+	case Exp__Exp_LB_Exp_RB: exp__exp_lb_exp_rb(root); break;
 	//case Exp__Exp_DOT_ID:break;
 	case Exp__ID:exp__id(root); break;
 	case Exp__INT: exp__int(root); break;
@@ -258,8 +259,9 @@ void vardec__id(struct Node* root) {
 	id->type = root->type;
 	id->kind = _VARIABLE_;
 	// redefination
-	if(lookupIDTable(id) !=NULL) {
-		printf("Error type 3 at Line %d: Redefined variable \"%s\"\n",root->lineno, id->lexeme);
+	char* name = id->lexeme;
+	if(lookupIDTable(name) !=NULL) {
+		printf("Error type 3 at Line %d: Redefined variable \"%s\"\n",root->lineno, name);
 	}
 	else addElement(id);
 }
@@ -295,8 +297,9 @@ void fundec__id_lp_varlist_rp(struct Node* root) {
 	id->argc = varlist->argc;//syn
 
 	//redefination
-	if(lookupIDTable(id) != NULL){
-		printf("Error type 4 at Line %d: Redefined function \"%s\"\n", root->lineno, id->lexeme);
+	char* name = id->lexeme;
+	if(lookupIDTable(name) != NULL){
+		printf("Error type 4 at Line %d: Redefined function \"%s\"\n", root->lineno, name);
 	}
 	else addElement(id);
 }
@@ -308,8 +311,9 @@ void fundec__id_lp_rp(struct Node* root) {
 	id->kind = _FUNCTION_;
 
 	//redefination
-	if(lookupIDTable(id) != NULL){
-		printf("Error type 4 at Line %d: Redefined function \"%s\"\n", root->lineno, id->lexeme);
+	char* name = id->lexeme;
+	if(lookupIDTable(name) != NULL){
+		printf("Error type 4 at Line %d: Redefined function \"%s\"\n", root->lineno, name);
 	}
 	else addElement(id);
 }
@@ -355,14 +359,14 @@ void paramdec__specifier_vardec(struct Node* root) {
 void compst__lc_deflist_stmtlist_rc(struct Node* root) {
 #ifdef DEBUG
 	printf("enter compst__lc_deflist_stmtlist_rc\n");
-#endif 
-	struct Node* deflist = root->child->nextSibling;
-	struct Node* stmtlist = deflist->nextSibling;
+#endif
 
-	stmtlist->retType = root->retType;
-
-	semanticAnalysis(deflist);
-	semanticAnalysis(stmtlist);
+	//注意deflist和stmtlist可以为空
+	struct Node* p = root->child;
+	for(;p!=NULL;p = p->nextSibling) {
+		p->retType = root->retType;
+		semanticAnalysis(p);
+	}
 }
 
 void stmtlist__stmt_stmtlist(struct Node* root) {
@@ -370,7 +374,6 @@ void stmtlist__stmt_stmtlist(struct Node* root) {
 	struct Node* stmtlist = stmt->nextSibling;
 
 	stmt->retType = root->retType;
-	printf("stmtlist__stmt_stmtlist: stmt->retType==NULL:%d\n", stmt->retType);
 	semanticAnalysis(stmt);
 
 	if(stmtlist != NULL) {
@@ -380,15 +383,12 @@ void stmtlist__stmt_stmtlist(struct Node* root) {
 }
 
 void stmt__return_exp_semi(struct Node* root) {
-	printf("stmt__return_exp_semi: root->retType==NULL:%d\n", root->retType==NULL);
 #ifdef DEBUG
 	printf("enter stmt__return_exp_semi()\n");
 #endif
 	struct Node* exp = root->child->nextSibling;
 
 	semanticAnalysis(exp);
-
-	printf("stmt__return_exp_semi: root->retType==NULL:%d\n", root->retType==NULL);
 
 	//check type
 	if(!isTypeEquals(root->retType, exp->type)) {
@@ -488,10 +488,16 @@ void exp__id_lp_args_rp(struct Node* root) {
 	struct Node* args = id->nextSibling->nextSibling;
 
 	//方程未定义
-	id->kind = _FUNCTION_;
-	struct Symbol* p = lookupIDTable(id);
+	char* name = id->lexeme;
+	struct Symbol* p = lookupIDTable(name);
 	if(p == NULL) {
-		printf("Error type 2 at Line %d: Undefined function \"%s\"\n", root->lineno, id->lexeme);
+		printf("Error type 2 at Line %d: Undefined function \"%s\"\n", root->lineno, name);
+		return;
+	}
+
+	//不是方程
+	if(p->kind != _FUNCTION_) {
+		printf("Error type 11 at Line %d: \"%s\" is not a fuction.\n", root->lineno, name);
 		return;
 	}
 	
@@ -512,7 +518,7 @@ void exp__id_lp_args_rp(struct Node* root) {
 		}
 	}
 	if(!flag) {
-		printf("Error type 9 at Line %d: Function \"%s\" is not applicable for arguments.\n", root->lineno, p->name, root->lineno, p->name);
+		printf("Error type 9 at Line %d: Function \"%s\" is not applicable for arguments.\n", root->lineno, name, root->lineno, name);
 	}
 
 	root->kind = _FUNCTION_;
@@ -550,6 +556,27 @@ void args__exp(struct Node* root) {
 	root->argc = argc;
 }
 
+void exp__exp_lb_exp_rb(struct Node* root) {
+	struct Node* exp1 = root->child;
+	struct Node* exp2 = exp1->nextSibling->nextSibling;
+
+	semanticAnalysis(exp1);
+	semanticAnalysis(exp2);
+
+	root->kind = _VARIABLE_;
+	root->type = exp1->type->u.array.elem;
+	root->lexeme = exp1->lexeme;
+
+	if(exp1->type->kind != _ARRAY_) {
+		printf("Error type 10 at Line %d: \"%s\" is not an array.\n", root->lineno, exp1->lexeme);
+		return;
+	}
+	if(exp2->type->kind != _BASIC_ || exp2->type->u.basic != _INT_) {
+		printf("Error type 12 at Line %d: \"%s\" is not an integer.\n", root->lineno, exp2->lexeme);
+		return;
+	}
+}
+
 void exp__id(struct Node* root) {
 #ifdef DEBUG
 	printf("enter exp__id\n");
@@ -557,14 +584,15 @@ void exp__id(struct Node* root) {
 	struct Node* id = root->child;
 
 	// 符号未定义
-	id->kind = _VARIABLE_;
-	struct Symbol* p = lookupIDTable(id);
+	char* name = id->lexeme;
+	struct Symbol* p = lookupIDTable(name);
 	if(p == NULL) {
-		printf("Error type 1 at Line %d: Undefined variable \"%s\"\n", root->lineno, id->lexeme);
+		printf("Error type 1 at Line %d: Undefined variable \"%s\"\n", root->lineno, name);
 	}
 	else {
 		root->kind = _VARIABLE_;
 		root->type = p->type;
+		root->lexeme = p->name;
 #ifdef DEBUG
 		printf("exp__id: %s\n", p->name);
 #endif
@@ -572,6 +600,8 @@ void exp__id(struct Node* root) {
 }
 
 void exp__int(struct Node* root) {
+	root->lexeme = root->child->lexeme;
+	
 	root->kind = _CONST_;
 
 	root->type = (Type)malloc(sizeof(struct Type_));
@@ -580,8 +610,10 @@ void exp__int(struct Node* root) {
 }
 
 void exp__float(struct Node* root) {
+	root->lexeme = root->child->lexeme;
+		
 	root->kind = _CONST_;
-
+	
 	root->type = (Type)malloc(sizeof(struct Type_));
 	root->type->kind = _BASIC_;
 	root->type->u.basic = _FLOAT_;

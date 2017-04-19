@@ -41,10 +41,7 @@ void addElement(struct Node* node){
 
 
 //find
-struct Symbol* lookupIDTable(struct Node* node){
-	char* name = node->lexeme;
-	IDKind kind = node->kind;
-
+struct Symbol* lookupIDTable(char* name){
 	int pos=hash_pjw(name);
 #ifdef DEBUG
 	printf("look up:%s \t pos:%d\n", name, pos);
@@ -52,7 +49,7 @@ struct Symbol* lookupIDTable(struct Node* node){
 
 	struct Symbol* p=table[pos];
 	for(;p!=NULL;p=p->next){
-		if(p->kind == kind && strcmp(p->name, name)==0)break;
+		if(strcmp(p->name, name)==0)break;
 	}
 
 	return p;
