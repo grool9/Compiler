@@ -5,8 +5,6 @@
 
 #define N 16384
 
-typedef enum {_VARIABLE_, _FUNCTION_} IDKind;
-
 //符号
 struct Symbol{
 	char* name;
@@ -18,9 +16,9 @@ struct Symbol{
 	
 		// function
 		struct {
+			Type retType;
 			int argc;
 			Type* argv;
-			Type retType;
 		};
 	};
 	
@@ -31,9 +29,8 @@ struct Symbol{
 struct Symbol* table[N];
 
 void initTable();
-void addVariable(struct Node* node);
-void addFunction(struct Node* node);
-struct Symbol* lookupIDTable(IDKind kind, char* name);
+void addElement(struct Node* node);
+struct Symbol* lookupIDTable(struct Node* node);
 void delElement(struct Node* node);
 
 #endif

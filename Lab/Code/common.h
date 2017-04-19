@@ -2,6 +2,8 @@
 #define __COMMON_H__
 
 typedef enum { false, true } bool;
+#define LEN 32
+#define MAXARGC 30
 
 #include <stdio.h>
 #include <string.h>

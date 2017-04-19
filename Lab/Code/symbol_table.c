@@ -19,18 +19,19 @@ void initTable(){
 }
 
 //add
-void addVariable(struct Node* node){
-	int pos=hash_pjw(node->lexeme);
+void addElement(struct Node* node){
+	char* name = node->lexeme;
+	int pos=hash_pjw(name);
 
 #ifdef DEBUG
-	printf("add element:%s\t pos:%d\n",node->lexeme,pos);
+	printf("add element:%s\t pos:%d\n",name,pos);
 #endif
 
 	struct Symbol* sym = (struct Symbol*)malloc(sizeof(struct Symbol));
 	sym->name = (char*)malloc(LEN);//变量名称
 
-	strcpy(sym->name, node->lexeme);
-	sym->kind = _VARIABLE_;
+	strcpy(sym->name, name);
+	sym->kind = node->kind;
 
 	sym->type = node->type;//变量类型
 
@@ -38,25 +39,17 @@ void addVariable(struct Node* node){
 	table[pos]=sym;
 }
 
-void addFunction(struct Node* node) {
-	int pos = hash_pjw(node->lexeme);
-
-	struct Symbol* sym = (struct Symbol*)malloc(sizeof(struct Symbol));
-	sym->name = (char*)malloc(LEN);
-
-	strcpy(sym->name, node->lexeme);
-	sym->kind = _FUNCTION_;
-
-	sym->next = table[pos];
-	table[pos] = sym;
-}
 
 //find
-struct Symbol* lookupIDTable(IDKind kind, char* name){
+struct Symbol* lookupIDTable(struct Node* node){
+	char* name = node->lexeme;
+	IDKind kind = node->kind;
+
 	int pos=hash_pjw(name);
 #ifdef DEBUG
 	printf("look up:%s \t pos:%d\n", name, pos);
 #endif	
+
 	struct Symbol* p=table[pos];
 	for(;p!=NULL;p=p->next){
 		if(p->kind == kind && strcmp(p->name, name)==0)break;

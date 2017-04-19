@@ -1,8 +1,9 @@
 #include "common.h"
 
-int semanticErrorCount = 0;
+//#define DEBUG
 
 void depthTraversal(struct Node* );
+bool isTypeEquals(Type t1, Type t2);
 
 void extdef__specifier_extdeclist_semi(struct Node*);
 void extdef__specifier_fundec_compst(struct Node*);
@@ -22,6 +23,7 @@ void varlist__paramdec_comma_varlist(struct Node*);
 void varlist__paramdec(struct Node*);
 void paramdec__specifier_vardec(struct Node*);
 void compst__lc_deflist_stmtlist_rc(struct Node*);
+void stmtlist__stmt_stmtlist(struct Node*);
 void stmt__exp_semi(struct Node*);
 void stmt__compst(struct Node*);
 void stmt__return_exp_semi(struct Node*);
@@ -33,25 +35,25 @@ void declist__dec(struct Node*);
 void declist__dec_comma_declist(struct Node*);
 void dec__vardec(struct Node*);
 void dec__vardec_assignop_exp(struct Node*);
+void exp__exp_assignop_exp(struct Node*);
 void exp__id_lp_args_rp(struct Node*);
+void exp__exp_op_exp(struct Node*);
 void exp__id(struct Node*);
-
-// print error msg
-void semanticError(int lineno, char* msg) {
-	semanticErrorCount ++;
-	printf("[Error type %d] line : %d  %s\n", semanticErrorCount, lineno, msg);
-}
+void exp__int(struct Node*);
+void exp__float(struct Node*);
+void args__exp_comma_args(struct Node*);
+void args__exp(struct Node*);
 
 // 遍历语法树
 void semanticAnalysis(struct Node* root){
 	if(root==NULL)return;
 	
 	switch(root->rule){
-	//case ExtDef__Specifier_ExtDecList_SEMI:break;
-	//case ExtDef__Specifier_FunDec_Compst:break;
+	case ExtDef__Specifier_ExtDecList_SEMI: extdef__specifier_extdeclist_semi(root); break;
+	case ExtDef__Specifier_FunDec_Compst: extdef__specifier_fundec_compst(root); break;
 	//case ExtDecList__VarDec:break;
 	//case ExtDecList__VarDec_COMMA_ExtDecList:break;
-	//case Specifier__TYPE:break;
+	case Specifier__TYPE: specifier__type(root); break;
 	//case Specifier__StructSpecifier:break;
 	//case StructSpecifier__STRUCT_OptTag_LC_DefList_RC:break; 
 	//case StructSpecifier__STRUCT_Tag:break;
@@ -59,15 +61,16 @@ void semanticAnalysis(struct Node* root){
 	//case Tag__ID:break;
 	case VarDec__ID:vardec__id(root); break;
 	case VarDec__VarDec_LB_int_RB:vardec__vardec_lb_int_rb(root); break;
-	//case FunDec__ID_LP_VarList_RP:break;
-	//case FunDec__ID_LP_RP:break;
-	//case VarList__ParamDec_COMMA_VarList:break;
-	//case VarList__ParamDec:break;
-	//case ParamDec__Specifier_VarDec:break;
-	//case Compst__LC_DefList_StmtList_RC:break; 
+	case FunDec__ID_LP_VarList_RP: fundec__id_lp_varlist_rp(root); break;
+	case FunDec__ID_LP_RP: fundec__id_lp_rp(root); break;
+	case VarList__ParamDec_COMMA_VarList: varlist__paramdec_comma_varlist(root); break;
+	case VarList__ParamDec: varlist__paramdec(root); break;
+	case ParamDec__Specifier_VarDec: paramdec__specifier_vardec(root); break;
+	case Compst__LC_DefList_StmtList_RC: compst__lc_deflist_stmtlist_rc(root); break;
+	case StmtList__Stmt_StmtList: stmtlist__stmt_stmtlist(root); break;
 	//case Stmt__Exp_SEMI:break;
 	//case Stmt__Compst:break;
-	//case Stmt__RETURN_Exp_SEMI:break; 
+	case Stmt__RETURN_Exp_SEMI: printf("semantic root->retType==NULL:%d\n", root->retType ==NULL);stmt__return_exp_semi(root); break; 
 	//case Stmt__IF_LP_Exp_RP_Stmt:break; 
 	//case Stmt__IF_LP_Exp_RP_Stmt_else_Stmt:break;
 	//case Stmt__WHILE_LP_Exp_RP_Stmt:break;
@@ -76,14 +79,14 @@ void semanticAnalysis(struct Node* root){
 	case DecList__Dec_COMMA_DecList:declist__dec_comma_declist(root); break;
 	case Dec__VarDec:dec__vardec(root); break;
 	case Dec__VarDec_ASSIGNOP_Exp:dec__vardec_assignop_exp(root); break;
-	//case Exp__Exp_ASSIGNOP_Exp:break;
+	case Exp__Exp_ASSIGNOP_Exp: exp__exp_assignop_exp(root); break;
 	//case Exp__Exp_AND_Exp:break;
 	//case Exp__Exp_OR_Exp:break; 
-	//case Exp__Exp_RELOP_Exp:break;
-	//case Exp__Exp_PLUS_Exp:break;
-	//case Exp__Exp_MINUS_Exp:break;
-	//case Exp__Exp_STAR_Exp:break;
-	//case Exp__Exp_DIV_Exp:break;
+	case Exp__Exp_RELOP_Exp:
+	case Exp__Exp_PLUS_Exp:
+	case Exp__Exp_MINUS_Exp:
+	case Exp__Exp_STAR_Exp:
+	case Exp__Exp_DIV_Exp: exp__exp_op_exp(root); break;
 	//case Exp__LP_Exp_RP:break;
 	//case Exp__MINUS_Exp:break;
 	//case Exp__NOT_Exp:break;
@@ -92,10 +95,10 @@ void semanticAnalysis(struct Node* root){
 	//case Exp__Exp_LB_Exp_RB:break;
 	//case Exp__Exp_DOT_ID:break;
 	case Exp__ID:exp__id(root); break;
-	//case Exp__INT:break;
-	//case Exp__FLOAT:break;
-	//case Args__Exp_COMMA_Args:break;
-	//case Args__Exp:break;
+	case Exp__INT: exp__int(root); break;
+	case Exp__FLOAT: exp__float(root); break;
+	case Args__Exp_COMMA_Args: args__exp_comma_args(root); break;
+	case Args__Exp:args__exp(root); break;
 	
 	default:depthTraversal(root);break;
  	}
@@ -110,17 +113,33 @@ void depthTraversal(struct Node* root) {
 	}
 }
 
-void __specifier_(struct Node* root) {
-	struct Node* specifier = root->child;
-	struct Node* other = specifier->nextSibling;
-	semanticAnalysis(specifier);
+bool isTypeEquals(Type t1, Type t2) {
+	if(t1==NULL && t2==NULL)return true;
+	if(t1==NULL || t2==NULL)return false;
 
-	Type t= specifier->type;
-	while(other!=NULL) {
-		//inh
-		other->type = t;
-		semanticAnalysis(other);
-		other = other->nextSibling;
+	if(t1->kind != t2->kind)return false;
+
+	switch(t1->kind) {
+		case _BASIC_:{
+						 if(t1->u.basic == t2->u.basic)return true;
+						 return false;
+					 }
+		case _ARRAY_:{
+						 if(isTypeEquals(t1->u.array.elem, t2->u.array.elem) && t1->u.array.size == t2->u.array.size)return true;
+						 return false;
+					 }
+		case _STRUCTURE_:{
+							 FieldList p = t1->u.structure;
+							 FieldList q = t2->u.structure;
+
+							 while(p!=NULL&&q!=NULL) {
+								 if(!isTypeEquals(p->type, q->type))return false;
+								 p = p->tail;
+								 q = q->tail;
+							 }
+							 if(p!=NULL||q!=NULL)return false;
+							 return true;
+						 }
 	}
 }
 
@@ -178,11 +197,11 @@ void specifier__type(struct Node* root) {
 	else if(strcmp(text,"float")==0){
 		root->type = (Type)malloc(sizeof(struct Type_));
 		root->type->kind=_BASIC_;
-		root->type->u.basic=_INT_;
+		root->type->u.basic=_FLOAT_;
 	}
 	else {
 		root->type = NULL;
-		semanticError(root->lineno, "wrong type");
+		//wrong type
 	}
 }
 
@@ -235,18 +254,14 @@ void tag__id(struct Node* root) {
 
 void vardec__id(struct Node* root) {
 	struct Node* id = root->child;	
+	
 	id->type = root->type;
-
+	id->kind = _VARIABLE_;
 	// redefination
-	char* text = id->lexeme;
-	if(lookupIDTable(_VARIABLE_, text) !=NULL) {
-		printf("Error type 3 at Line %d: Redefined variable \"%s\"\n",root->lineno, text);
+	if(lookupIDTable(id) !=NULL) {
+		printf("Error type 3 at Line %d: Redefined variable \"%s\"\n",root->lineno, id->lexeme);
 	}
-	else addVariable(id);
-
-#ifdef DEBUG
-	printf("vardec__id:%s\n",id->lexeme);
-#endif
+	else addElement(id);
 }
 
 void vardec__vardec_lb_int_rb(struct Node* root) {
@@ -265,21 +280,120 @@ void vardec__vardec_lb_int_rb(struct Node* root) {
 }
 
 void fundec__id_lp_varlist_rp(struct Node* root) {
+	struct Node* id = root->child;
+	struct Node* varlist = id->nextSibling->nextSibling;
 
+	id->kind = _FUNCTION_;
+	id->retType = root->retType;
+	
+	id->argv = (Type*)malloc(sizeof(Type)*MAXARGC);
+
+	varlist->argc = 0; //inh
+	varlist->argv = id->argv;//inh
+	semanticAnalysis(varlist);
+
+	id->argc = varlist->argc;//syn
+
+	//redefination
+	if(lookupIDTable(id) != NULL){
+		printf("Error type 4 at Line %d: Redefined function \"%s\"\n", root->lineno, id->lexeme);
+	}
+	else addElement(id);
 }
 
 void fundec__id_lp_rp(struct Node* root) {
+	struct Node* id = root->child;
+
+	id->retType = root->retType;
+	id->kind = _FUNCTION_;
+
+	//redefination
+	if(lookupIDTable(id) != NULL){
+		printf("Error type 4 at Line %d: Redefined function \"%s\"\n", root->lineno, id->lexeme);
+	}
+	else addElement(id);
 }
 
 void varlist__paramdec_comma_varlist(struct Node* root) {
+	struct Node* paramdec = root->child;
+	struct Node* varlist = paramdec->nextSibling->nextSibling;
 
+	paramdec->argc = root->argc;
+	paramdec->argv = root->argv;
+	semanticAnalysis(paramdec);
+
+	varlist->argc = paramdec->argc;
+	varlist->argv = paramdec->argv;
+	semanticAnalysis(varlist);
+
+	root->argc = varlist->argc;//syn
 }
 
 void varlist__paramdec(struct Node* root) {
+	struct Node* paramdec = root->child;
+
+	paramdec->argc = root->argc;
+	paramdec->argv = root->argv;
+	semanticAnalysis(paramdec);
+
+	root->argc = paramdec->argc;
+}
+
+void paramdec__specifier_vardec(struct Node* root) {
+	struct Node* specifier = root->child;
+	struct Node* vardec = specifier->nextSibling;
+
+	semanticAnalysis(specifier);
+
+	vardec->type = specifier->type;
+	semanticAnalysis(vardec);
+
+	root->argv[root->argc] = specifier->type;
+	root->argc++;
+}
+
+void compst__lc_deflist_stmtlist_rc(struct Node* root) {
+#ifdef DEBUG
+	printf("enter compst__lc_deflist_stmtlist_rc\n");
+#endif 
+	struct Node* deflist = root->child->nextSibling;
+	struct Node* stmtlist = deflist->nextSibling;
+
+	stmtlist->retType = root->retType;
+
+	semanticAnalysis(deflist);
+	semanticAnalysis(stmtlist);
+}
+
+void stmtlist__stmt_stmtlist(struct Node* root) {
+	struct Node* stmt = root->child;
+	struct Node* stmtlist = stmt->nextSibling;
+
+	stmt->retType = root->retType;
+	printf("stmtlist__stmt_stmtlist: stmt->retType==NULL:%d\n", stmt->retType);
+	semanticAnalysis(stmt);
+
+	if(stmtlist != NULL) {
+		stmtlist->retType = root->retType;
+		semanticAnalysis(stmtlist);
+	}
 }
 
 void stmt__return_exp_semi(struct Node* root) {
+	printf("stmt__return_exp_semi: root->retType==NULL:%d\n", root->retType==NULL);
+#ifdef DEBUG
+	printf("enter stmt__return_exp_semi()\n");
+#endif
+	struct Node* exp = root->child->nextSibling;
+
+	semanticAnalysis(exp);
+
+	printf("stmt__return_exp_semi: root->retType==NULL:%d\n", root->retType==NULL);
+
 	//check type
+	if(!isTypeEquals(root->retType, exp->type)) {
+		printf("Error type 8 at Line %d: Type mismatched for return.\n", root->lineno);
+	}
 }
 
 //......................
@@ -291,6 +405,7 @@ void def__specifier_declist_semi(struct Node* root) {
 	semanticAnalysis(specifier);
 
 	declist->type = specifier->type;
+	
 	semanticAnalysis(declist);
 }
 
@@ -341,34 +456,133 @@ void exp__exp_assignop_exp(struct Node* root) {
 	semanticAnalysis(exp1);
 	semanticAnalysis(exp2);
 
+	//等号左边为右值
+	if(exp1->kind != _VARIABLE_) {
+		printf("Error type 6 at Line %d: The left-hand side of an assignment must be a variable.\n", root->lineno);
+	}
+
 	//等号两边类型匹配
-	if(exp1->type != exp2->type) {
+	if(!isTypeEquals(exp1->type, exp2->type)) {
+		printf("Error type 5 at Line %d: Type mismatched for assignment.\n", root->lineno);
 	}
 }
 
 void exp__exp_and_exp(struct Node* root) {
 }
 
+void exp__exp_op_exp(struct Node* root) {
+	struct Node* exp1 = root->child;
+	struct Node* exp2 = exp1->nextSibling->nextSibling;
+
+	semanticAnalysis(exp1);
+	semanticAnalysis(exp2);
+
+	// 类型匹配
+	if(!isTypeEquals(exp1->type, exp2->type)) {
+		printf("Error type 7 at Line %d: Type mismatched for operands.\n", root->lineno);
+	}
+}
+
 void exp__id_lp_args_rp(struct Node* root) {
 	struct Node* id = root->child;
+	struct Node* args = id->nextSibling->nextSibling;
 
-	char* text = id->lexeme;
-
-	struct Symbol* sym = lookupIDTable(_FUNCTION_, text);
-	// 函数未定义
-	if(sym == NULL) {
-		printf("Error type 2 at Line %d: Undefined function \"%s\"\n", root->lineno, text);
+	//方程未定义
+	id->kind = _FUNCTION_;
+	struct Symbol* p = lookupIDTable(id);
+	if(p == NULL) {
+		printf("Error type 2 at Line %d: Undefined function \"%s\"\n", root->lineno, id->lexeme);
+		return;
 	}
+	
+	args->argc = 0;
+	args->argv = (Type*)malloc(sizeof(Type)*MAXARGC);
+	semanticAnalysis(args);
+
+	//参数不对
+	bool flag = true;
+	if(p->argc != args->argc)flag = false;
+	else {
+		int i = 0;
+		for(; i<args->argc; i++) {
+			if(!isTypeEquals(p->argv[i], args->argv[i])) {
+					flag = false;
+					break;
+			}
+		}
+	}
+	if(!flag) {
+		printf("Error type 9 at Line %d: Function \"%s\" is not applicable for arguments.\n", root->lineno, p->name, root->lineno, p->name);
+	}
+
+	root->kind = _FUNCTION_;
+	root->retType = p->retType;
+}
+
+void args__exp_comma_args(struct Node* root) {
+	struct Node* exp = root->child;
+	struct Node* args = exp->nextSibling->nextSibling;
+
+	int argc = root->argc;
+	Type* argv = root->argv;
+	semanticAnalysis(exp);
+	
+	argv[argc] = exp->type;
+	argc++;
+
+	args->argc = argc;
+	args->argv = argv;
+	semanticAnalysis(args);
+
+	root->argc = args->argc;
+}
+
+void args__exp(struct Node* root) {
+	struct Node* exp = root->child;
+
+	int argc = root->argc;
+	Type* argv = root->argv;
+	semanticAnalysis(exp);
+
+	argv[argc] = exp->type;
+	argc++;
+
+	root->argc = argc;
 }
 
 void exp__id(struct Node* root) {
+#ifdef DEBUG
+	printf("enter exp__id\n");
+#endif
 	struct Node* id = root->child;
 
 	// 符号未定义
-	char* text = id->lexeme;
-	if(lookupIDTable(_VARIABLE_, text)==NULL) {
-		printf("Error type 1 at Line %d: Undefined variable \"%s\"\n", root->lineno, text);
+	id->kind = _VARIABLE_;
+	struct Symbol* p = lookupIDTable(id);
+	if(p == NULL) {
+		printf("Error type 1 at Line %d: Undefined variable \"%s\"\n", root->lineno, id->lexeme);
+	}
+	else {
+		root->kind = _VARIABLE_;
+		root->type = p->type;
+#ifdef DEBUG
+		printf("exp__id: %s\n", p->name);
+#endif
 	}
 }
 
-//..................
+void exp__int(struct Node* root) {
+	root->kind = _CONST_;
+
+	root->type = (Type)malloc(sizeof(struct Type_));
+	root->type->kind = _BASIC_;
+	root->type->u.basic = _INT_;
+}
+
+void exp__float(struct Node* root) {
+	root->kind = _CONST_;
+
+	root->type = (Type)malloc(sizeof(struct Type_));
+	root->type->kind = _BASIC_;
+	root->type->u.basic = _FLOAT_;
+}

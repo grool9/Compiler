@@ -1,8 +1,6 @@
 #ifndef __TREE_H__
 #define __TREE_H__
 
-#define LEN 32
-
 typedef enum{
 	No_Rule,//terminal token
 	Program__ExtDefList, 
@@ -61,6 +59,7 @@ typedef enum{
 	Args__Exp
 }Rule;
 
+typedef enum {_CONST_, _VARIABLE_, _FUNCTION_} IDKind;
 
 typedef struct Type_* Type;
 typedef struct FieldList_* FieldList;
@@ -86,20 +85,21 @@ struct FieldList_
 struct Node{
 	int terminal;
 	char* token;
-	char* lexeme;//name
+	char* lexeme;// =>name
 	int lineno;
 	struct Node* child;
 	struct Node* nextSibling;
 
 	// lab2
 	Rule rule;
+
+	IDKind kind;
 	union {
 		Type type;
-
 		struct {
+			Type retType;//function
 			int argc;
 			Type* argv;
-			Type retType;
 		};
 	};
 };
