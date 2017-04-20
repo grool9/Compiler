@@ -93,7 +93,7 @@ struct Node{
 	// lab2
 	Rule rule;
 
-	IDKind kind;
+	IDKind idkind;
 	union {
 		Type type;
 		struct {

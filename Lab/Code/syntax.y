@@ -199,8 +199,9 @@ struct Node* insert(Rule rule, char* token, int argc, ...){
 	head->child=NULL;
 	head->nextSibling=NULL;
 
-	//head->typeno=no;
+	//lab2
 	head->rule = rule;
+	head->type = NULL;
 
 	struct Node* current=head;
 

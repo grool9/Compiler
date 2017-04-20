@@ -3,7 +3,7 @@
 //#define DEBUG
 
 bool isBuildingStruct = false;
-Type structType = NULL;
+int top = -1;
 
 void depthTraversal(struct Node* );
 bool isTypeEquals(Type t1, Type t2);
@@ -31,9 +31,7 @@ void stmtlist__stmt_stmtlist(struct Node*);
 void stmt__exp_semi(struct Node*);
 void stmt__compst(struct Node*);
 void stmt__return_exp_semi(struct Node*);
-void stmt__if_lp_exp_rp_stmt(struct Node*);
-void stmt__if_lp_exp_rp_stmt_else_stmt(struct Node*);
-void stmt__while_lp_exp_rp_stmt(struct Node*);
+void stmt__other(struct Node*);
 void deflist__def_deflist(struct Node*);
 void def__specifier_declist_semi(struct Node*);
 void declist__dec(struct Node*);
@@ -79,9 +77,9 @@ void semanticAnalysis(struct Node* root){
 	//case Stmt__Exp_SEMI:break;
 	//case Stmt__Compst:break;
 	case Stmt__RETURN_Exp_SEMI: stmt__return_exp_semi(root); break; 
-	//case Stmt__IF_LP_Exp_RP_Stmt:break; 
-	//case Stmt__IF_LP_Exp_RP_Stmt_else_Stmt:break;
-	//case Stmt__WHILE_LP_Exp_RP_Stmt:break;
+	case Stmt__IF_LP_Exp_RP_Stmt: stmt__other(root); break; 
+	case Stmt__IF_LP_Exp_RP_Stmt_else_Stmt:stmt__other(root); break;
+	case Stmt__WHILE_LP_Exp_RP_Stmt:stmt__other(root); break;
 	case DefList__Def_DefList: deflist__def_deflist(root); break;
 	case Def__Specifier_DecList_SEMI:def__specifier_declist_semi(root); break;
 	case DecList__Dec:declist__dec(root); break;
@@ -189,14 +187,6 @@ void extdeclist__vardec(struct Node* root) {
 	
 	vardec->type = root->type;
 	semanticAnalysis(vardec);
-
-	vardec->kind = _VARIABLE_;
-	// redefination
-	char* name = vardec->lexeme;
-	if(lookupIDTable(name) !=NULL) {
-		printf("Error type 3 at Line %d: Redefined variable \"%s\"\n",root->lineno, name);
-	}
-	else addElement(vardec);
 }
 
 void extdeclist__vardec_comma_extdeclist(struct Node* root) {
@@ -239,33 +229,45 @@ void specifier__structspecifier(struct Node* root) {
 }
 
 void structspecifier__struct_opttag_lc_deflist_rc(struct Node* root) {
+#ifdef DEBUG
 	printf("Enter structspecifer__struct_opttag_lc_deflist_rc\n");
+#endif
 	isBuildingStruct = true;
 
 	struct Node* opttag = root->child->nextSibling;
 	struct Node* deflist = opttag->nextSibling->nextSibling;
 
-	// structspecifier kind
-	root->kind = _TYPE_;
+	// structspecifier idkind
+	root->idkind = _TYPE_;
 	
 	// structspecifier name
 	semanticAnalysis(opttag);
 	root->lexeme = opttag->lexeme;
 
-	structType = (Type)malloc(sizeof(struct Type_));
-	structType->kind = _STRUCTURE_; // type kind
-	structType->u.structure = NULL;
-	
+	// check table
+	char* name = root->lexeme;
+	if(lookupIDTable(name) != NULL) {
+		printf("Error type 16 at Line %d: Duplicated name \"%s\".\n", root->lineno, name);
+		return;
+	}
+
+	top++;
+	structinfo[top].structName = root->lexeme;
+	structinfo[top].structType = (Type)malloc(sizeof(struct Type_));
+	structinfo[top].structType->kind = _STRUCTURE_; // type kind
+	structinfo[top].structType->u.structure = NULL;
+
 	semanticAnalysis(deflist);
 	
 	//structspecifier type
-	root->type = structType;
+	root->type = structinfo[top].structType;
 
+	// add 2 symbol table
 	addElement(root);
 
 	// re-initial
 	isBuildingStruct = false;
-	structType = NULL;
+	top--;
 }
 
 void structspecifier__struct_tag(struct Node* root) {
@@ -275,6 +277,11 @@ void structspecifier__struct_tag(struct Node* root) {
 	char* name = tag->lexeme;
 
 	struct Symbol* sym = lookupIDTable(name);
+	if(sym == NULL) {
+		printf("Error type 17 at Line %d: Undefined structure \"%s\".\n", root->lineno, name);
+		return;
+	}
+
 	root->type = sym->type;
 }
 
@@ -294,15 +301,16 @@ void vardec__id(struct Node* root) {
 	
 	id->type = root->type;
 	char* name = id->lexeme;
+
 	if(isBuildingStruct) {
 		FieldList p = (FieldList)malloc(sizeof(struct FieldList_));
 		p->name = name;
 		p->type = id->type;
 		p->tail = NULL;
 
-		FieldList current = structType->u.structure;
+		FieldList current = structinfo[top].structType->u.structure;
 		if(current == NULL) {
-			structType->u.structure = p;
+			structinfo[top].structType->u.structure = p;
 		}
 		else {
 			while(current->tail != NULL)current = current->tail;
@@ -311,10 +319,19 @@ void vardec__id(struct Node* root) {
 	}
 	
 	// redefination
-	if(lookupIDTable(name) != NULL) {
-		printf("Error type 3 at Line %d: Redefined variable \"%s\"\n",root->lineno, name);
+	struct Symbol* sym = lookupIDTable(name);
+	if(sym == NULL) {
+		if(isBuildingStruct)addField(id, structinfo[top].structName);
+		else addElement(id);
 	}
-	else addElement(id);
+	else{
+		if(isBuildingStruct && strcmp(sym->addr, structinfo[top].structName)==0) {
+			printf("Error type 15 at Line %d: Redefined field \"%s\".\n", root->lineno, name);
+		}
+		else {
+			printf("Error type 3 at Line %d: Redefined variable \"%s\"\n",root->lineno, name);
+		}
+	}
 }
 
 void vardec__vardec_lb_int_rb(struct Node* root) {
@@ -334,7 +351,7 @@ void fundec__id_lp_varlist_rp(struct Node* root) {
 	struct Node* id = root->child;
 	struct Node* varlist = id->nextSibling->nextSibling;
 
-	id->kind = _FUNCTION_;
+	id->idkind = _FUNCTION_;
 	id->retType = root->retType;
 	
 	id->argv = (Type*)malloc(sizeof(Type)*MAXARGC);
@@ -357,7 +374,7 @@ void fundec__id_lp_rp(struct Node* root) {
 	struct Node* id = root->child;
 
 	id->retType = root->retType;
-	id->kind = _FUNCTION_;
+	id->idkind = _FUNCTION_;
 
 	//redefination
 	char* name = id->lexeme;
@@ -409,7 +426,7 @@ void compst__lc_deflist_stmtlist_rc(struct Node* root) {
 #ifdef DEBUG
 	printf("enter compst__lc_deflist_stmtlist_rc\n");
 #endif
-
+	
 	//注意deflist和stmtlist可以为空
 	struct Node* p = root->child;
 	for(;p!=NULL;p = p->nextSibling) {
@@ -422,6 +439,9 @@ void stmtlist__stmt_stmtlist(struct Node* root) {
 	struct Node* stmt = root->child;
 	struct Node* stmtlist = stmt->nextSibling;
 
+	if(root->retType!=NULL){
+		printf("stmtlist return type: %d\n",root->retType->u.basic);
+	}
 	stmt->retType = root->retType;
 	semanticAnalysis(stmt);
 
@@ -439,15 +459,36 @@ void stmt__return_exp_semi(struct Node* root) {
 
 	semanticAnalysis(exp);
 
+	if(root->retType!=NULL){
+		printf("stmt return type: %d\n",root->retType->u.basic);
+	}
+	if(exp->type !=NULL) {
+		printf("exp type: %d\n", exp->type->u.basic);
+	}
+
 	//check type
 	if(!isTypeEquals(root->retType, exp->type)) {
 		printf("Error type 8 at Line %d: Type mismatched for return.\n", root->lineno);
 	}
 }
 
+void stmt__other(struct Node* root) {
+	struct Node* p = root->child;
+
+	while(p != NULL){
+		p->type = root->type;
+		semanticAnalysis(p);
+
+		p = p->nextSibling;
+	}
+}
+
+
+
 void deflist__def_deflist(struct Node* root) {
+#ifdef DEBUG
 	printf("enter deflist__def_deflist\n");
-	
+#endif
 	struct Node* def = root->child;
 	struct Node* deflist = def->nextSibling;
 
@@ -518,7 +559,7 @@ void exp__exp_assignop_exp(struct Node* root) {
 	semanticAnalysis(exp2);
 
 	//等号左边为右值
-	if(exp1->kind != _VARIABLE_) {
+	if(exp1->idkind != _VARIABLE_) {
 		printf("Error type 6 at Line %d: The left-hand side of an assignment must be a variable.\n", root->lineno);
 	}
 
@@ -557,7 +598,7 @@ void exp__id_lp_args_rp(struct Node* root) {
 	}
 
 	//不是方程
-	if(p->kind != _FUNCTION_) {
+	if(p->idkind != _FUNCTION_) {
 		printf("Error type 11 at Line %d: \"%s\" is not a fuction.\n", root->lineno, name);
 		return;
 	}
@@ -585,7 +626,7 @@ void exp__id_lp_args_rp(struct Node* root) {
 	}
 
 	// 综合属性
-	root->kind = _CONST_;
+	root->idkind = _CONST_;
 	root->retType = p->retType;
 }
 
@@ -627,7 +668,7 @@ void exp__exp_lb_exp_rb(struct Node* root) {
 	semanticAnalysis(exp1);
 	semanticAnalysis(exp2);
 
-	root->kind = _VARIABLE_;
+	root->idkind = _VARIABLE_;
 	root->type = exp1->type->u.array.elem;
 	root->lexeme = exp1->lexeme;
 
@@ -642,21 +683,33 @@ void exp__exp_lb_exp_rb(struct Node* root) {
 }
 
 void exp__exp_dot_id(struct Node* root) {
+#ifdef DEBUG
 	printf("Enter exp__exp_dot_id\n");
-
+#endif
 	struct Node* exp1 = root->child;
 	struct Node* id = exp1->nextSibling->nextSibling;
 
 	semanticAnalysis(exp1);
-
-	printf("exp1->type == NULL:%d\n", exp1->type==NULL);
 
 	// check type
 	if(exp1->type->kind != _STRUCTURE_) {
 		printf("Error type 13 at Line %d: Illegal use of \".\"\n", root->lineno);
 	}
 
-	printf("id:%s\n", id->lexeme);
+	// 结构中的域
+	FieldList p = exp1->type->u.structure;
+	bool found = false;
+	while( p!=NULL) {
+		if(strcmp(p->name, id->lexeme)==0){
+				found = true;
+				root->type = p->type;
+				break;
+		}
+		p = p->tail;
+	}
+	if(found == false) {
+		printf("Error type 14 at Line %d: Non-existent field \"%s\".\n", root->lineno, id->lexeme);
+	}
 }
 
 void exp__id(struct Node* root) {
@@ -672,20 +725,20 @@ void exp__id(struct Node* root) {
 		printf("Error type 1 at Line %d: Undefined variable \"%s\"\n", root->lineno, name);
 	}
 	else {
-		root->kind = _VARIABLE_;
+		root->idkind = _VARIABLE_;
 		root->type = p->type;
 		root->lexeme = p->name;
 #ifdef DEBUG
 		printf("exp__id: %s\n", p->name);
-#endif
 		printf("exp__id: root->lexeme:%s \t root->type==NULL:%d\n", root->lexeme, root->type == NULL);			
+#endif
 	}
 }
 
 void exp__int(struct Node* root) {
 	root->lexeme = root->child->lexeme;
 	
-	root->kind = _CONST_;
+	root->idkind = _CONST_;
 
 	root->type = (Type)malloc(sizeof(struct Type_));
 	root->type->kind = _BASIC_;
@@ -695,7 +748,7 @@ void exp__int(struct Node* root) {
 void exp__float(struct Node* root) {
 	root->lexeme = root->child->lexeme;
 		
-	root->kind = _CONST_;
+	root->idkind = _CONST_;
 	
 	root->type = (Type)malloc(sizeof(struct Type_));
 	root->type->kind = _BASIC_;

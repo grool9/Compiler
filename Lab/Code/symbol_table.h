@@ -8,7 +8,7 @@
 //符号
 struct Symbol{
 	char* name;
-	IDKind kind;//名字的种类
+	IDKind idkind;//名字的种类
 
 	union{
 		// variable
@@ -22,13 +22,14 @@ struct Symbol{
 		};
 	};
 	
-	int addr;
+	char* addr;
 	struct Symbol* next;
 };
 
 struct Symbol* table[N];
 
 void initTable();
+void addField(struct Node*, char*);
 void addElement(struct Node* node);
 struct Symbol* lookupIDTable(char* name);
 void delElement(struct Node* node);

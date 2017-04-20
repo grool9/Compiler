@@ -19,6 +19,23 @@ void initTable(){
 }
 
 //add
+void addField(struct Node* node, char* structName){
+	char* name = node->lexeme;
+	int pos = hash_pjw(name);
+
+	struct Symbol* sym = (struct Symbol*)malloc(sizeof(struct Symbol));
+	sym->name = (char*)malloc(LEN);//变量名称
+	strcpy(sym->name, name);
+	sym->idkind = node->idkind;
+	sym->type = node->type;//变量类型
+	sym->addr = (char*)malloc(LEN);
+	strcpy(sym->addr, structName);
+
+	sym->next=table[pos];
+	table[pos]=sym;
+}
+
+//add
 void addElement(struct Node* node){
 	char* name = node->lexeme;
 	int pos=hash_pjw(name);
@@ -29,12 +46,10 @@ void addElement(struct Node* node){
 
 	struct Symbol* sym = (struct Symbol*)malloc(sizeof(struct Symbol));
 	sym->name = (char*)malloc(LEN);//变量名称
-
 	strcpy(sym->name, name);
-	sym->kind = node->kind;
-
+	sym->idkind = node->idkind;
 	sym->type = node->type;//变量类型
-
+	sym->addr = NULL;
 	sym->next=table[pos];
 	table[pos]=sym;
 }
