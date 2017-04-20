@@ -36,9 +36,10 @@ void declist__dec_comma_declist(struct Node*);
 void dec__vardec(struct Node*);
 void dec__vardec_assignop_exp(struct Node*);
 void exp__exp_assignop_exp(struct Node*);
-void exp__id_lp_args_rp(struct Node*);
 void exp__exp_op_exp(struct Node*);
+void exp__id_lp_args_rp(struct Node*);
 void exp__exp_lb_exp_rb(struct Node*);
+void exp__exp_dot_id(struct Node*);
 void exp__id(struct Node*);
 void exp__int(struct Node*);
 void exp__float(struct Node*);
@@ -92,9 +93,9 @@ void semanticAnalysis(struct Node* root){
 	//case Exp__MINUS_Exp:break;
 	//case Exp__NOT_Exp:break;
 	case Exp__ID_LP_Args_RP: exp__id_lp_args_rp(root); break;
-	//case Exp__ID_LP_RP:break;
+	case Exp__ID_LP_RP: exp__id_lp_args_rp(root); break;
 	case Exp__Exp_LB_Exp_RB: exp__exp_lb_exp_rb(root); break;
-	//case Exp__Exp_DOT_ID:break;
+	case Exp__Exp_DOT_ID: exp__exp_dot_id(root); break;
 	case Exp__ID:exp__id(root); break;
 	case Exp__INT: exp__int(root); break;
 	case Exp__FLOAT: exp__float(root); break;
@@ -500,7 +501,9 @@ void exp__id_lp_args_rp(struct Node* root) {
 		printf("Error type 11 at Line %d: \"%s\" is not a fuction.\n", root->lineno, name);
 		return;
 	}
-	
+
+	//实参
+	//对于exp__id_lp_rp 这个实参为空 semanticAnalysis(rp);
 	args->argc = 0;
 	args->argv = (Type*)malloc(sizeof(Type)*MAXARGC);
 	semanticAnalysis(args);
@@ -521,7 +524,8 @@ void exp__id_lp_args_rp(struct Node* root) {
 		printf("Error type 9 at Line %d: Function \"%s\" is not applicable for arguments.\n", root->lineno, name, root->lineno, name);
 	}
 
-	root->kind = _FUNCTION_;
+	// 综合属性
+	root->kind = _CONST_;
 	root->retType = p->retType;
 }
 
@@ -575,6 +579,19 @@ void exp__exp_lb_exp_rb(struct Node* root) {
 		printf("Error type 12 at Line %d: \"%s\" is not an integer.\n", root->lineno, exp2->lexeme);
 		return;
 	}
+}
+
+void exp__exp_dot_id(struct Node* root) {
+	struct Node* exp1 = root->child;
+	struct Node* id = exp1->nextSibling->nextSibling;
+
+	semanticAnalysis(exp1);
+
+	// check type
+	if(exp1->type->kind != _STRUCTURE_) {
+		printf("Error type 13 at Line %d: Illegal use of \".\"\n", root->lineno);
+	}
+// ..............................
 }
 
 void exp__id(struct Node* root) {
