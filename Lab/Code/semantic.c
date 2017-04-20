@@ -1,6 +1,6 @@
 #include "common.h"
 
-//#define DEBUG
+#define DEBUG
 
 void depthTraversal(struct Node* );
 bool isTypeEquals(Type t1, Type t2);
@@ -30,6 +30,7 @@ void stmt__return_exp_semi(struct Node*);
 void stmt__if_lp_exp_rp_stmt(struct Node*);
 void stmt__if_lp_exp_rp_stmt_else_stmt(struct Node*);
 void stmt__while_lp_exp_rp_stmt(struct Node*);
+void deflist__def_deflist(struct Node*);
 void def__specifier_declist_semi(struct Node*);
 void declist__dec(struct Node*);
 void declist__dec_comma_declist(struct Node*);
@@ -56,11 +57,11 @@ void semanticAnalysis(struct Node* root){
 	//case ExtDecList__VarDec:break;
 	//case ExtDecList__VarDec_COMMA_ExtDecList:break;
 	case Specifier__TYPE: specifier__type(root); break;
-	//case Specifier__StructSpecifier:break;
-	//case StructSpecifier__STRUCT_OptTag_LC_DefList_RC:break; 
-	//case StructSpecifier__STRUCT_Tag:break;
-	//case OptTag__ID:break;
-	//case Tag__ID:break;
+	case Specifier__StructSpecifier: specifier__structspecifier(root); break;
+	case StructSpecifier__STRUCT_OptTag_LC_DefList_RC: structspecifier__struct_opttag_lc_deflist_rc(root); break; 
+	case StructSpecifier__STRUCT_Tag: structspecifier__struct_tag(root); break;
+	case OptTag__ID: opttag__id(root); break;
+	case Tag__ID: tag__id(root); break;
 	case VarDec__ID:vardec__id(root); break;
 	case VarDec__VarDec_LB_int_RB:vardec__vardec_lb_int_rb(root); break;
 	case FunDec__ID_LP_VarList_RP: fundec__id_lp_varlist_rp(root); break;
@@ -76,6 +77,7 @@ void semanticAnalysis(struct Node* root){
 	//case Stmt__IF_LP_Exp_RP_Stmt:break; 
 	//case Stmt__IF_LP_Exp_RP_Stmt_else_Stmt:break;
 	//case Stmt__WHILE_LP_Exp_RP_Stmt:break;
+	case DefList__Def_DefList: deflist__def_deflist(root); break;
 	case Def__Specifier_DecList_SEMI:def__specifier_declist_semi(root); break;
 	case DecList__Dec:declist__dec(root); break;
 	case DecList__Dec_COMMA_DecList:declist__dec_comma_declist(root); break;
@@ -213,7 +215,7 @@ void specifier__structspecifier(struct Node* root) {
 	semanticAnalysis(structspecifier);
 	root->type = structspecifier->type;
 }
-
+// need to modify //////////////////////////////////
 void structspecifier__struct_opttag_lc_deflist_rc(struct Node* root) {
 	struct Node* opttag = root->child->nextSibling;
 	struct Node* deflist = opttag->nextSibling->nextSibling;
@@ -256,7 +258,7 @@ void tag__id(struct Node* root) {
 
 void vardec__id(struct Node* root) {
 	struct Node* id = root->child;	
-	
+
 	id->type = root->type;
 	id->kind = _VARIABLE_;
 	// redefination
@@ -397,7 +399,18 @@ void stmt__return_exp_semi(struct Node* root) {
 	}
 }
 
-//......................
+void deflist__def_deflist(struct Node* root) {
+	struct Node* def = root->child;
+	struct Node* deflist = def->nextSibling;
+
+	def->type = root->type;
+	semanticAnalysis(def);
+
+	if(deflist != NULL) {
+		deflist->type = root->type;
+		semanticAnalysis(deflist);
+	}
+}
 
 void def__specifier_declist_semi(struct Node* root) {
 	struct Node* specifier = root->child;
@@ -582,16 +595,21 @@ void exp__exp_lb_exp_rb(struct Node* root) {
 }
 
 void exp__exp_dot_id(struct Node* root) {
+	printf("Enter exp__exp_dot_id\n");
+
 	struct Node* exp1 = root->child;
 	struct Node* id = exp1->nextSibling->nextSibling;
 
 	semanticAnalysis(exp1);
 
+	printf("exp1->type == NULL:%d\n", exp1->type==NULL);
+
 	// check type
 	if(exp1->type->kind != _STRUCTURE_) {
 		printf("Error type 13 at Line %d: Illegal use of \".\"\n", root->lineno);
 	}
-// ..............................
+
+	printf("id:%s\n", id->lexeme);
 }
 
 void exp__id(struct Node* root) {
@@ -613,6 +631,7 @@ void exp__id(struct Node* root) {
 #ifdef DEBUG
 		printf("exp__id: %s\n", p->name);
 #endif
+		printf("exp__id: root->lexeme:%s \t root->type==NULL:%d\n", root->lexeme, root->type == NULL);			
 	}
 }
 
