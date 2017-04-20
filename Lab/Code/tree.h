@@ -59,7 +59,7 @@ typedef enum{
 	Args__Exp
 }Rule;
 
-typedef enum {_CONST_, _VARIABLE_, _FUNCTION_} IDKind;
+typedef enum {_CONST_, _VARIABLE_, _FUNCTION_, _TYPE_} IDKind;
 
 typedef struct Type_* Type;
 typedef struct FieldList_* FieldList;

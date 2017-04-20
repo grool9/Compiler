@@ -1,12 +1,16 @@
 #include "common.h"
 
-#define DEBUG
+//#define DEBUG
+
+bool isBuildingStruct = false;
+Type structType = NULL;
 
 void depthTraversal(struct Node* );
 bool isTypeEquals(Type t1, Type t2);
 
 void extdef__specifier_extdeclist_semi(struct Node*);
 void extdef__specifier_fundec_compst(struct Node*);
+void extdef__specifier_semi(struct Node*);
 void extdeclist__vardec(struct Node*);
 void extdeclist__vardec_comma_extdeclist(struct Node*);
 void specifier__type(struct Node*);
@@ -54,6 +58,7 @@ void semanticAnalysis(struct Node* root){
 	switch(root->rule){
 	case ExtDef__Specifier_ExtDecList_SEMI: extdef__specifier_extdeclist_semi(root); break;
 	case ExtDef__Specifier_FunDec_Compst: extdef__specifier_fundec_compst(root); break;
+	case ExtDef__Specifier_SEMI: extdef__specifier_semi(root); break;
 	//case ExtDecList__VarDec:break;
 	//case ExtDecList__VarDec_COMMA_ExtDecList:break;
 	case Specifier__TYPE: specifier__type(root); break;
@@ -148,6 +153,8 @@ bool isTypeEquals(Type t1, Type t2) {
 }
 
 void extdef__specifier_extdeclist_semi(struct Node* root) {
+	printf("enter extdef__specifier_extdeclist_semi()\n");
+
 	struct Node* specifier = root->child;
 	struct Node* extdeclist = specifier->nextSibling;
 
@@ -171,11 +178,25 @@ void extdef__specifier_fundec_compst(struct Node* root) {
 	semanticAnalysis(compst);
 }
 
+void extdef__specifier_semi(struct Node* root) {
+	struct Node* specifier = root->child;
+	semanticAnalysis(specifier);
+}
+
 void extdeclist__vardec(struct Node* root) {
+	printf("enter extdeclist__vardec\n");
 	struct Node* vardec = root->child;
 	
 	vardec->type = root->type;
 	semanticAnalysis(vardec);
+
+	vardec->kind = _VARIABLE_;
+	// redefination
+	char* name = vardec->lexeme;
+	if(lookupIDTable(name) !=NULL) {
+		printf("Error type 3 at Line %d: Redefined variable \"%s\"\n",root->lineno, name);
+	}
+	else addElement(vardec);
 }
 
 void extdeclist__vardec_comma_extdeclist(struct Node* root) {
@@ -213,36 +234,48 @@ void specifier__structspecifier(struct Node* root) {
 	struct Node* structspecifier = root->child;
 
 	semanticAnalysis(structspecifier);
+
 	root->type = structspecifier->type;
 }
-// need to modify //////////////////////////////////
+
 void structspecifier__struct_opttag_lc_deflist_rc(struct Node* root) {
+	printf("Enter structspecifer__struct_opttag_lc_deflist_rc\n");
+	isBuildingStruct = true;
+
 	struct Node* opttag = root->child->nextSibling;
 	struct Node* deflist = opttag->nextSibling->nextSibling;
 
+	// structspecifier kind
+	root->kind = _TYPE_;
+	
+	// structspecifier name
 	semanticAnalysis(opttag);
 	root->lexeme = opttag->lexeme;
 
-	Type t = (Type)malloc(sizeof(struct Type_));
-	t->kind = _STRUCTURE_;
-	t->u.structure = (FieldList)malloc(sizeof(struct FieldList_));
-	deflist->type = t;
-
+	structType = (Type)malloc(sizeof(struct Type_));
+	structType->kind = _STRUCTURE_; // type kind
+	structType->u.structure = NULL;
+	
 	semanticAnalysis(deflist);
+	
+	//structspecifier type
+	root->type = structType;
 
-	root->type = deflist->type;
+	addElement(root);
+
+	// re-initial
+	isBuildingStruct = false;
+	structType = NULL;
 }
 
 void structspecifier__struct_tag(struct Node* root) {
 	struct Node* tag = root->child->nextSibling;
 
 	semanticAnalysis(tag);
-	root->lexeme = tag->lexeme;
+	char* name = tag->lexeme;
 
-	Type t = (Type)malloc(sizeof(struct Type_));
-	t->kind = _STRUCTURE_;
-	t->u.structure = NULL;
-	root->type = t;
+	struct Symbol* sym = lookupIDTable(name);
+	root->type = sym->type;
 }
 
 void opttag__id(struct Node* root) {
@@ -258,12 +291,27 @@ void tag__id(struct Node* root) {
 
 void vardec__id(struct Node* root) {
 	struct Node* id = root->child;	
-
+	
 	id->type = root->type;
-	id->kind = _VARIABLE_;
-	// redefination
 	char* name = id->lexeme;
-	if(lookupIDTable(name) !=NULL) {
+	if(isBuildingStruct) {
+		FieldList p = (FieldList)malloc(sizeof(struct FieldList_));
+		p->name = name;
+		p->type = id->type;
+		p->tail = NULL;
+
+		FieldList current = structType->u.structure;
+		if(current == NULL) {
+			structType->u.structure = p;
+		}
+		else {
+			while(current->tail != NULL)current = current->tail;
+			current->tail = p;
+		}
+	}
+	
+	// redefination
+	if(lookupIDTable(name) != NULL) {
 		printf("Error type 3 at Line %d: Redefined variable \"%s\"\n",root->lineno, name);
 	}
 	else addElement(id);
@@ -280,8 +328,6 @@ void vardec__vardec_lb_int_rb(struct Node* root) {
 
 	vardec->type = t;
 	semanticAnalysis(vardec);
-
-	root->type = vardec->type;
 }
 
 void fundec__id_lp_varlist_rp(struct Node* root) {
@@ -400,14 +446,14 @@ void stmt__return_exp_semi(struct Node* root) {
 }
 
 void deflist__def_deflist(struct Node* root) {
+	printf("enter deflist__def_deflist\n");
+	
 	struct Node* def = root->child;
 	struct Node* deflist = def->nextSibling;
 
-	def->type = root->type;
 	semanticAnalysis(def);
 
 	if(deflist != NULL) {
-		deflist->type = root->type;
 		semanticAnalysis(deflist);
 	}
 }
@@ -419,11 +465,13 @@ void def__specifier_declist_semi(struct Node* root) {
 	semanticAnalysis(specifier);
 
 	declist->type = specifier->type;
-	
 	semanticAnalysis(declist);
 }
 
 void declist__dec(struct Node* root) {
+#ifdef DEBUG
+	printf("enter declist__dec()\n");
+#endif
 	struct Node* dec = root->child;
 	dec->type = root->type;
 
@@ -460,7 +508,6 @@ void dec__vardec_assignop_exp(struct Node* root) {
 	//if(exp->type != vardec->type){
 	//	semanticError(vardec->lineno, "wrong type");
 	//}
-
 }
 
 void exp__exp_assignop_exp(struct Node* root) {
