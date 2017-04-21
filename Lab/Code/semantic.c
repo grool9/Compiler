@@ -39,7 +39,10 @@ void declist__dec_comma_declist(struct Node*);
 void dec__vardec(struct Node*);
 void dec__vardec_assignop_exp(struct Node*);
 void exp__exp_assignop_exp(struct Node*);
-void exp__exp_op_exp(struct Node*);
+void exp__exp_logicalop_exp(struct Node*);
+void exp__exp_arithop_exp(struct Node*);
+void exp__minus_exp(struct Node*);
+void exp__not_exp(struct Node*);
 void exp__id_lp_args_rp(struct Node*);
 void exp__exp_lb_exp_rb(struct Node*);
 void exp__exp_dot_id(struct Node*);
@@ -87,16 +90,16 @@ void semanticAnalysis(struct Node* root){
 	case Dec__VarDec:dec__vardec(root); break;
 	case Dec__VarDec_ASSIGNOP_Exp:dec__vardec_assignop_exp(root); break;
 	case Exp__Exp_ASSIGNOP_Exp: exp__exp_assignop_exp(root); break;
-	//case Exp__Exp_AND_Exp:break;
-	//case Exp__Exp_OR_Exp:break; 
-	case Exp__Exp_RELOP_Exp:
+	case Exp__Exp_AND_Exp:
+	case Exp__Exp_OR_Exp: exp__exp_logicalop_exp(root); break; 
+	//case Exp__Exp_RELOP_Exp:
 	case Exp__Exp_PLUS_Exp:
 	case Exp__Exp_MINUS_Exp:
 	case Exp__Exp_STAR_Exp:
-	case Exp__Exp_DIV_Exp: exp__exp_op_exp(root); break;
+	case Exp__Exp_DIV_Exp: exp__exp_arithop_exp(root); break;
 	//case Exp__LP_Exp_RP:break;
-	//case Exp__MINUS_Exp:break;
-	//case Exp__NOT_Exp:break;
+	case Exp__MINUS_Exp: exp__minus_exp(root); break;
+	case Exp__NOT_Exp: exp__not_exp(root); break;
 	case Exp__ID_LP_Args_RP: exp__id_lp_args_rp(root); break;
 	case Exp__ID_LP_RP: exp__id_lp_args_rp(root); break;
 	case Exp__Exp_LB_Exp_RB: exp__exp_lb_exp_rb(root); break;
@@ -439,9 +442,6 @@ void stmtlist__stmt_stmtlist(struct Node* root) {
 	struct Node* stmt = root->child;
 	struct Node* stmtlist = stmt->nextSibling;
 
-	if(root->retType!=NULL){
-		printf("stmtlist return type: %d\n",root->retType->u.basic);
-	}
 	stmt->retType = root->retType;
 	semanticAnalysis(stmt);
 
@@ -569,20 +569,64 @@ void exp__exp_assignop_exp(struct Node* root) {
 	}
 }
 
-void exp__exp_and_exp(struct Node* root) {
-}
-
-void exp__exp_op_exp(struct Node* root) {
+void exp__exp_logicalop_exp(struct Node* root) {
 	struct Node* exp1 = root->child;
 	struct Node* exp2 = exp1->nextSibling->nextSibling;
 
 	semanticAnalysis(exp1);
 	semanticAnalysis(exp2);
 
+	if(exp1->type->kind != _BASIC_ || exp1->type->u.basic != _INT_) {
+		printf("Error type 7 at Line %d: operand \"%s\" must be integer.\n", root->lineno, exp1->lexeme);
+	}
+	if(exp2->type->kind != _BASIC_ || exp2->type->u.basic != _INT_) {
+         printf("Error type 7 at Line %d: operand \"%s\" must be integer.\n",     root->lineno, exp2->lexeme);
+     }
+
+	root->type = exp1->type;
+}
+
+void exp__exp_arithop_exp(struct Node* root) {
+	struct Node* exp1 = root->child;
+	struct Node* exp2 = exp1->nextSibling->nextSibling;
+
+	semanticAnalysis(exp1);
+	semanticAnalysis(exp2);
+
+
+	if(exp1->type->kind != _BASIC_) {
+		printf("Error type 7 at Line %d: operand \"%s\" must be integer or float.\n",root->lineno, exp1->lexeme);
+     }
+	if(exp2->type->kind != _BASIC_) {
+		printf("Error type 7 at Line %d: operand \"%s\" must be integer or float.\n",root->lineno, exp1->lexeme);
+     }
+
 	// 类型匹配
 	if(!isTypeEquals(exp1->type, exp2->type)) {
 		printf("Error type 7 at Line %d: Type mismatched for operands.\n", root->lineno);
 	}
+
+	root->type = exp1->type;
+}
+
+void exp__minus_exp(struct Node* root) {
+	struct Node* exp1 = root->child->nextSibling;
+	semanticAnalysis(exp1);
+	if(exp1->type->kind != _BASIC_) {
+		printf("Error type 7 at Line %d: operand \"%s\" must be integer or float.\n",root->lineno, exp1->lexeme);
+     }
+
+	root->type = exp1->type;
+}
+
+void exp__not_exp(struct Node* root) {
+	struct Node* exp1 = root->child->nextSibling;
+	semanticAnalysis(exp1);
+	if(exp1->type->kind != _BASIC_ || exp1->type->u.basic != _INT_) {
+		printf("Error type 7 at Line %d: operand \"%s\" must be integer.\n",root->lineno, exp1->lexeme);
+	}
+
+	root->type = exp1->type;
 }
 
 void exp__id_lp_args_rp(struct Node* root) {
