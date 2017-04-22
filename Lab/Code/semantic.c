@@ -41,6 +41,7 @@ void dec__vardec_assignop_exp(struct Node*);
 void exp__exp_assignop_exp(struct Node*);
 void exp__exp_logicalop_exp(struct Node*);
 void exp__exp_arithop_exp(struct Node*);
+void exp__lp_exp_rp(struct Node*);
 void exp__minus_exp(struct Node*);
 void exp__not_exp(struct Node*);
 void exp__id_lp_args_rp(struct Node*);
@@ -91,13 +92,13 @@ void semanticAnalysis(struct Node* root){
 	case Dec__VarDec_ASSIGNOP_Exp:dec__vardec_assignop_exp(root); break;
 	case Exp__Exp_ASSIGNOP_Exp: exp__exp_assignop_exp(root); break;
 	case Exp__Exp_AND_Exp:
-	case Exp__Exp_OR_Exp: exp__exp_logicalop_exp(root); break; 
-	//case Exp__Exp_RELOP_Exp:
+	case Exp__Exp_OR_Exp:
+	case Exp__Exp_RELOP_Exp: exp__exp_logicalop_exp(root); break;
 	case Exp__Exp_PLUS_Exp:
 	case Exp__Exp_MINUS_Exp:
 	case Exp__Exp_STAR_Exp:
 	case Exp__Exp_DIV_Exp: exp__exp_arithop_exp(root); break;
-	//case Exp__LP_Exp_RP:break;
+	case Exp__LP_Exp_RP: exp__lp_exp_rp(root); break;
 	case Exp__MINUS_Exp: exp__minus_exp(root); break;
 	case Exp__NOT_Exp: exp__not_exp(root); break;
 	case Exp__ID_LP_Args_RP: exp__id_lp_args_rp(root); break;
@@ -605,6 +606,13 @@ void exp__exp_arithop_exp(struct Node* root) {
 	if(!isTypeEquals(exp1->type, exp2->type)) {
 		printf("Error type 7 at Line %d: Type mismatched for operands.\n", root->lineno);
 	}
+
+	root->type = exp1->type;
+}
+
+void exp__lp_exp_rp(struct Node* root) {
+	struct Node* exp1 = root->child->nextSibling;
+	semanticAnalysis(exp1);
 
 	root->type = exp1->type;
 }
