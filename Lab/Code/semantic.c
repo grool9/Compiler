@@ -250,7 +250,7 @@ void structspecifier__struct_opttag_lc_deflist_rc(struct Node* root) {
 
 	// check table
 	char* name = root->lexeme;
-	if(lookupIDTable(name) != NULL) {
+	if(lookupIDTable(root) != NULL) {
 		printf("Error type 16 at Line %d: Duplicated name \"%s\".\n", root->lineno, name);
 		return;
 	}
@@ -280,7 +280,7 @@ void structspecifier__struct_tag(struct Node* root) {
 	semanticAnalysis(tag);
 	char* name = tag->lexeme;
 
-	struct Symbol* sym = lookupIDTable(name);
+	struct Symbol* sym = lookupIDTable(tag);
 	if(sym == NULL) {
 		printf("Error type 17 at Line %d: Undefined structure \"%s\".\n", root->lineno, name);
 		return;
@@ -323,7 +323,7 @@ void vardec__id(struct Node* root) {
 	}
 	
 	// redefination
-	struct Symbol* sym = lookupIDTable(name);
+	struct Symbol* sym = lookupIDTable(id);
 	if(sym == NULL) {
 		if(isBuildingStruct)addField(id, structinfo[top].structName);
 		else addElement(id);
@@ -368,7 +368,8 @@ void fundec__id_lp_varlist_rp(struct Node* root) {
 
 	//redefination
 	char* name = id->lexeme;
-	if(lookupIDTable(name) != NULL){
+	struct Symbol* p = lookupIDTable(id);
+	if(p != NULL && p->idkind == _FUNCTION_){
 		printf("Error type 4 at Line %d: Redefined function \"%s\"\n", root->lineno, name);
 	}
 	else addElement(id);
@@ -382,7 +383,7 @@ void fundec__id_lp_rp(struct Node* root) {
 
 	//redefination
 	char* name = id->lexeme;
-	if(lookupIDTable(name) != NULL){
+	if(lookupIDTable(id) != NULL){
 		printf("Error type 4 at Line %d: Redefined function \"%s\"\n", root->lineno, name);
 	}
 	else addElement(id);
@@ -546,10 +547,12 @@ void dec__vardec_assignop_exp(struct Node* root) {
 	semanticAnalysis(vardec);
 
 	semanticAnalysis(exp);
+	
 	//check type
-	//if(exp->type != vardec->type){
-	//	semanticError(vardec->lineno, "wrong type");
-	//}
+	//等号两边类型匹配
+	if(!isTypeEquals(vardec->type, exp->type)) {
+         printf("Error type 5 at Line %d: Type mismatched for assignment.\n",root->lineno);
+     }
 }
 
 void exp__exp_assignop_exp(struct Node* root) {
@@ -643,7 +646,7 @@ void exp__id_lp_args_rp(struct Node* root) {
 
 	//方程未定义
 	char* name = id->lexeme;
-	struct Symbol* p = lookupIDTable(name);
+	struct Symbol* p = lookupIDTable(id);
 	if(p == NULL) {
 		printf("Error type 2 at Line %d: Undefined function \"%s\"\n", root->lineno, name);
 		return;
@@ -772,7 +775,7 @@ void exp__id(struct Node* root) {
 
 	// 符号未定义
 	char* name = id->lexeme;
-	struct Symbol* p = lookupIDTable(name);
+	struct Symbol* p = lookupIDTable(id);
 	if(p == NULL) {
 		printf("Error type 1 at Line %d: Undefined variable \"%s\"\n", root->lineno, name);
 	}
@@ -780,10 +783,6 @@ void exp__id(struct Node* root) {
 		root->idkind = _VARIABLE_;
 		root->type = p->type;
 		root->lexeme = p->name;
-#ifdef DEBUG
-		printf("exp__id: %s\n", p->name);
-		printf("exp__id: root->lexeme:%s \t root->type==NULL:%d\n", root->lexeme, root->type == NULL);			
-#endif
 	}
 }
 

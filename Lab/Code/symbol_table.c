@@ -56,15 +56,22 @@ void addElement(struct Node* node){
 
 
 //find
-struct Symbol* lookupIDTable(char* name){
+struct Symbol* lookupIDTable(struct Node* node){
+	char* name = node->lexeme;
 	int pos=hash_pjw(name);
+
 #ifdef DEBUG
 	printf("look up:%s \t pos:%d\n", name, pos);
 #endif	
 
 	struct Symbol* p=table[pos];
 	for(;p!=NULL;p=p->next){
-		if(strcmp(p->name, name)==0)break;
+		if(node->idkind == _FUNCTION_){
+			if(p->idkind == _FUNCTION_ && strcmp(name, p->name) == 0)break;
+		}
+		else {//_CONST_不会存入符号表
+			if(p->idkind != _FUNCTION_ && strcmp(name, p->name) == 0)break;
+		}
 	}
 
 	return p;

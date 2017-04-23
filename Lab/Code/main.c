@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
 	
 	//if(!isWrong)outputTree(root,0);
 	initTable();
-	semanticAnalysis(root);
+	if(!isWrong)semanticAnalysis(root);
 
 	return 0;
 } 
