@@ -31,7 +31,8 @@ struct Symbol* table[N];
 void initTable();
 void addField(struct Node*, char*);
 void addElement(struct Node* node);
-struct Symbol* lookupIDTable(struct Node* node);
+struct Symbol* lookupFunction(char* name);
+struct Symbol* lookupVariable(char* name);
 void delElement(struct Node* node);
 
 #endif
