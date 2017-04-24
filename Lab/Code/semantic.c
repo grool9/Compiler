@@ -136,7 +136,7 @@ bool isTypeEquals(Type t1, Type t2) {
 						 return false;
 					 }
 		case _ARRAY_:{
-						 if(isTypeEquals(t1->u.array.elem, t2->u.array.elem) && t1->u.array.size == t2->u.array.size)return true;
+						 if(isTypeEquals(t1->u.array.elem, t2->u.array.elem))return true;
 						 return false;
 					 }
 		case _STRUCTURE_:{
@@ -348,6 +348,8 @@ void vardec__vardec_lb_int_rb(struct Node* root) {
 
 	vardec->type = t;
 	semanticAnalysis(vardec);
+
+	root->type = vardec->type;
 }
 
 void fundec__id_lp_varlist_rp(struct Node* root) {
@@ -542,7 +544,15 @@ void dec__vardec_assignop_exp(struct Node* root) {
 	semanticAnalysis(vardec);
 
 	semanticAnalysis(exp);
-	
+
+#ifdef DEBUG
+	printf("enter dec__vardec_assignop_exp()\n");
+	printf("vardec type---");
+	printType(vardec->type);
+	printf("exp type---");
+	printType(exp->type);
+#endif
+
 	//check type
 	//等号两边类型匹配
 	if(!isTypeEquals(vardec->type, exp->type)) {
