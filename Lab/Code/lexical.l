@@ -72,6 +72,7 @@ void setVal(char* token, char* lexeme){
 	yylval->nextSibling=NULL;
 
 	//lab2
-	yylval->type = NULL;
+	yylval->type = none_type;
 	yylval->rule = No_Rule;
+	yylval->isLeftVal = false;
 }

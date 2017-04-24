@@ -9,6 +9,7 @@
 struct Symbol{
 	char* name;
 	IDKind idkind;//名字的种类
+	bool isLeftVal;
 
 	union{
 		// variable
@@ -33,6 +34,8 @@ void addField(struct Node*, char*);
 void addElement(struct Node* node);
 struct Symbol* lookupFunction(char* name);
 struct Symbol* lookupVariable(char* name);
-void delElement(struct Node* node);
+
+void printType(Type type);
+void printArgv(int argc, Type* argv);
 
 #endif

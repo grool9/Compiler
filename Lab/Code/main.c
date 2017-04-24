@@ -7,6 +7,10 @@ extern void yyrestart(FILE*);
 extern void yyparse();
 
 int main(int argc, char** argv) {
+	// init
+	none_type = (Type)malloc(sizeof(struct Type_));
+	none_type->kind = _NONE_;
+
 	if (argc <= 1)return 1;
 	FILE* f = fopen(argv[1], "r");
 	if (!f) {

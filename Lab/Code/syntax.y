@@ -201,7 +201,8 @@ struct Node* insert(Rule rule, char* token, int argc, ...){
 
 	//lab2
 	head->rule = rule;
-	head->type = NULL;
+	head->type = none_type;
+	head->isLeftVal = false;
 
 	struct Node* current=head;
 

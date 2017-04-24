@@ -59,7 +59,7 @@ typedef enum{
 	Args__Exp
 }Rule;
 
-typedef enum {_CONST_, _VARIABLE_, _FUNCTION_, _TYPE_} IDKind;
+typedef enum {_VARIABLE_, _FUNCTION_, _TYPE_} IDKind;
 
 typedef struct Type_* Type;
 typedef struct FieldList_* FieldList;
@@ -67,7 +67,7 @@ typedef struct FieldList_* FieldList;
 //类型
 struct Type_
 {
-	enum {_BASIC_, _ARRAY_, _STRUCTURE_}kind;
+	enum {_NONE_, _BASIC_, _ARRAY_, _STRUCTURE_}kind;
 	union{
 		enum {_INT_, _FLOAT_}basic;
 		struct {Type elem; int size; }array;
@@ -94,6 +94,7 @@ struct Node{
 	Rule rule;
 
 	IDKind idkind;
+	bool isLeftVal;
 	union {
 		Type type;
 		struct {
@@ -103,6 +104,9 @@ struct Node{
 		};
 	};
 };
+
+// none type
+Type none_type;
 
 // parse tree root
 extern struct Node* root;

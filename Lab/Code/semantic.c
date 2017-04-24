@@ -155,8 +155,6 @@ bool isTypeEquals(Type t1, Type t2) {
 }
 
 void extdef__specifier_extdeclist_semi(struct Node* root) {
-	printf("enter extdef__specifier_extdeclist_semi()\n");
-
 	struct Node* specifier = root->child;
 	struct Node* extdeclist = specifier->nextSibling;
 
@@ -186,7 +184,6 @@ void extdef__specifier_semi(struct Node* root) {
 }
 
 void extdeclist__vardec(struct Node* root) {
-	printf("enter extdeclist__vardec\n");
 	struct Node* vardec = root->child;
 	
 	vardec->type = root->type;
@@ -236,6 +233,7 @@ void structspecifier__struct_opttag_lc_deflist_rc(struct Node* root) {
 #ifdef DEBUG
 	printf("Enter structspecifer__struct_opttag_lc_deflist_rc\n");
 #endif
+	// initial
 	isBuildingStruct = true;
 
 	struct Node* opttag = root->child->nextSibling;
@@ -248,13 +246,6 @@ void structspecifier__struct_opttag_lc_deflist_rc(struct Node* root) {
 	semanticAnalysis(opttag);
 	root->lexeme = opttag->lexeme;
 
-	// check table
-	char* name = root->lexeme;
-	if(lookupVariable(name) != NULL) {
-		printf("Error type 16 at Line %d: Duplicated name \"%s\".\n", root->lineno, name);
-		return;
-	}
-
 	top++;
 	structinfo[top].structName = root->lexeme;
 	structinfo[top].structType = (Type)malloc(sizeof(struct Type_));
@@ -266,8 +257,13 @@ void structspecifier__struct_opttag_lc_deflist_rc(struct Node* root) {
 	//structspecifier type
 	root->type = structinfo[top].structType;
 
-	// add 2 symbol table
-	addElement(root);
+	// check table
+	char* name = root->lexeme;
+	struct Symbol* p = lookupVariable(name);
+	if(p != NULL) {
+		printf("Error type 16 at Line %d: Duplicated name \"%s\".\n", root->lineno, name);
+	}
+	else addElement(root);
 
 	// re-initial
 	isBuildingStruct = false;
@@ -306,7 +302,8 @@ void vardec__id(struct Node* root) {
 	
 	id->type = root->type;
 	char* name = id->lexeme;
-
+	
+	// 添加到域
 	if(isBuildingStruct) {
 		FieldList p = (FieldList)malloc(sizeof(struct FieldList_));
 		p->name = name;
@@ -322,7 +319,7 @@ void vardec__id(struct Node* root) {
 			current->tail = p;
 		}
 	}
-	
+
 	// redefination
 	struct Symbol* sym = lookupVariable(name);
 	if(sym == NULL) {
@@ -330,7 +327,8 @@ void vardec__id(struct Node* root) {
 		else addElement(id);
 	}
 	else{
-		if(isBuildingStruct && strcmp(sym->addr, structinfo[top].structName)==0) {
+		if(isBuildingStruct && strcmp(sym->addr, structinfo[top].structName)==0) 
+		{
 			printf("Error type 15 at Line %d: Redefined field \"%s\".\n", root->lineno, name);
 		}
 		else {
@@ -366,7 +364,9 @@ void fundec__id_lp_varlist_rp(struct Node* root) {
 	semanticAnalysis(varlist);
 
 	id->argc = varlist->argc;//syn
-
+#ifdef DEBUG
+	printArgv(id->argc, id->argv);
+#endif
 	//redefination
 	char* name = id->lexeme;
 	struct Symbol* p = lookupFunction(name);
@@ -463,13 +463,6 @@ void stmt__return_exp_semi(struct Node* root) {
 
 	semanticAnalysis(exp);
 
-	if(root->retType!=NULL){
-		printf("stmt return type: %d\n",root->retType->u.basic);
-	}
-	if(exp->type !=NULL) {
-		printf("exp type: %d\n", exp->type->u.basic);
-	}
-
 	//check type
 	if(!isTypeEquals(root->retType, exp->type)) {
 		printf("Error type 8 at Line %d: Type mismatched for return.\n", root->lineno);
@@ -564,8 +557,16 @@ void exp__exp_assignop_exp(struct Node* root) {
 	semanticAnalysis(exp1);
 	semanticAnalysis(exp2);
 
+#ifdef DEBUG
+	printf("enter exp__exp_assignop_exp()\n");
+	printf("left---");
+	printType(exp1->type);
+	printf("right---");
+	printType(exp2->type);
+#endif
+
 	//等号左边为右值
-	if(exp1->idkind != _VARIABLE_) {
+	if(!exp1->isLeftVal) {
 		printf("Error type 6 at Line %d: The left-hand side of an assignment must be a variable.\n", root->lineno);
 	}
 
@@ -573,6 +574,8 @@ void exp__exp_assignop_exp(struct Node* root) {
 	if(!isTypeEquals(exp1->type, exp2->type)) {
 		printf("Error type 5 at Line %d: Type mismatched for assignment.\n", root->lineno);
 	}
+
+	root->type = exp1->type;
 }
 
 void exp__exp_logicalop_exp(struct Node* root) {
@@ -586,7 +589,7 @@ void exp__exp_logicalop_exp(struct Node* root) {
 		printf("Error type 7 at Line %d: operand \"%s\" must be integer.\n", root->lineno, exp1->lexeme);
 	}
 	if(exp2->type->kind != _BASIC_ || exp2->type->u.basic != _INT_) {
-         printf("Error type 7 at Line %d: operand \"%s\" must be integer.\n",     root->lineno, exp2->lexeme);
+         printf("Error type 7 at Line %d: operand \"%s\" must be integer.\n", root->lineno, exp2->lexeme);
      }
 
 	root->type = exp1->type;
@@ -599,12 +602,11 @@ void exp__exp_arithop_exp(struct Node* root) {
 	semanticAnalysis(exp1);
 	semanticAnalysis(exp2);
 
-
 	if(exp1->type->kind != _BASIC_) {
 		printf("Error type 7 at Line %d: operand \"%s\" must be integer or float.\n",root->lineno, exp1->lexeme);
      }
 	if(exp2->type->kind != _BASIC_) {
-		printf("Error type 7 at Line %d: operand \"%s\" must be integer or float.\n",root->lineno, exp1->lexeme);
+		printf("Error type 7 at Line %d: operand \"%s\" must be integer or float.\n",root->lineno, exp2->lexeme);
      }
 
 	// 类型匹配
@@ -625,6 +627,7 @@ void exp__lp_exp_rp(struct Node* root) {
 void exp__minus_exp(struct Node* root) {
 	struct Node* exp1 = root->child->nextSibling;
 	semanticAnalysis(exp1);
+
 	if(exp1->type->kind != _BASIC_) {
 		printf("Error type 7 at Line %d: operand \"%s\" must be integer or float.\n",root->lineno, exp1->lexeme);
      }
@@ -635,6 +638,7 @@ void exp__minus_exp(struct Node* root) {
 void exp__not_exp(struct Node* root) {
 	struct Node* exp1 = root->child->nextSibling;
 	semanticAnalysis(exp1);
+
 	if(exp1->type->kind != _BASIC_ || exp1->type->u.basic != _INT_) {
 		printf("Error type 7 at Line %d: operand \"%s\" must be integer.\n",root->lineno, exp1->lexeme);
 	}
@@ -646,9 +650,12 @@ void exp__id_lp_args_rp(struct Node* root) {
 	struct Node* id = root->child;
 	struct Node* args = id->nextSibling->nextSibling;
 
-	//方程未定义
 	char* name = id->lexeme;
+	root->lexeme = name;
+	
 	struct Symbol* p = lookupFunction(name);
+	
+	// 方程未定义
 	if(p == NULL) {
 		printf("Error type 2 at Line %d: Undefined function \"%s\"\n", root->lineno, name);
 		return;
@@ -665,6 +672,13 @@ void exp__id_lp_args_rp(struct Node* root) {
 	args->argc = 0;
 	args->argv = (Type*)malloc(sizeof(Type)*MAXARGC);
 	semanticAnalysis(args);
+
+#ifdef DEBUG
+	printf("形参\n");
+	printArgv(p->argc, p->argv);
+	printf("实参\n");
+	printArgv(args->argc, args->argv);
+#endif
 
 	//参数不对
 	bool flag = true;
@@ -683,7 +697,6 @@ void exp__id_lp_args_rp(struct Node* root) {
 	}
 
 	// 综合属性
-	root->idkind = _CONST_;//
 	root->retType = p->retType;
 }
 
@@ -710,6 +723,7 @@ void args__exp(struct Node* root) {
 
 	int argc = root->argc;
 	Type* argv = root->argv;
+
 	semanticAnalysis(exp);
 
 	argv[argc] = exp->type;
@@ -725,18 +739,18 @@ void exp__exp_lb_exp_rb(struct Node* root) {
 	semanticAnalysis(exp1);
 	semanticAnalysis(exp2);
 
-	root->idkind = _VARIABLE_;
-	root->type = exp1->type->u.array.elem;
-	root->lexeme = exp1->lexeme;
-
+	// check type
 	if(exp1->type->kind != _ARRAY_) {
 		printf("Error type 10 at Line %d: \"%s\" is not an array.\n", root->lineno, exp1->lexeme);
-		return;
 	}
+	else root->type = exp1->type->u.array.elem;
+
+	// [?]
 	if(exp2->type->kind != _BASIC_ || exp2->type->u.basic != _INT_) {
 		printf("Error type 12 at Line %d: \"%s\" is not an integer.\n", root->lineno, exp2->lexeme);
-		return;
 	}
+
+	root->isLeftVal = true;
 }
 
 void exp__exp_dot_id(struct Node* root) {
@@ -748,62 +762,71 @@ void exp__exp_dot_id(struct Node* root) {
 
 	semanticAnalysis(exp1);
 
+	root->lexeme = id->lexeme;
+	root->isLeftVal = true;
+
 	// check type
 	if(exp1->type->kind != _STRUCTURE_) {
 		printf("Error type 13 at Line %d: Illegal use of \".\"\n", root->lineno);
+		return;// 不继续检查域了
 	}
 
 	// 结构中的域
 	FieldList p = exp1->type->u.structure;
-	bool found = false;
 	while( p!=NULL) {
-		if(strcmp(p->name, id->lexeme)==0){
-				found = true;
-				root->type = p->type;
-				break;
-		}
+		if(strcmp(p->name, id->lexeme)==0)break;
 		p = p->tail;
 	}
-	if(found == false) {
+	// 结构体中没有这个域
+	if(p == NULL) {
 		printf("Error type 14 at Line %d: Non-existent field \"%s\".\n", root->lineno, id->lexeme);
-	}
+	} 
+	else root->type = p->type;
 }
 
 void exp__id(struct Node* root) {
-#ifdef DEBUG
-	printf("enter exp__id\n");
-#endif
 	struct Node* id = root->child;
+	
+	char* name = id->lexeme;
+	root->lexeme = name;
+	root->isLeftVal = true;
 
 	// 符号未定义
-	char* name = id->lexeme;
 	struct Symbol* p = lookupVariable(name);
 	if(p == NULL) {
 		printf("Error type 1 at Line %d: Undefined variable \"%s\"\n", root->lineno, name);
-	}
-	else {
-		root->idkind = _VARIABLE_;
-		root->type = p->type;
-		root->lexeme = p->name;
-	}
+		return;
+	}	
+
+#ifdef DEBUG
+	printf("enter exp__id()\n\t %s type ---", name);
+	printType(id->type);
+#endif
+
+	root->type = p->type;
 }
 
 void exp__int(struct Node* root) {
 	root->lexeme = root->child->lexeme;
-	
-	root->idkind = _CONST_;
 
 	root->type = (Type)malloc(sizeof(struct Type_));
 	root->type->kind = _BASIC_;
 	root->type->u.basic = _INT_;
+
+#ifdef DEBUG
+	printf("enter exp__int()\n\ttype---");
+	printType(root->type);
+#endif
 }
 
 void exp__float(struct Node* root) {
 	root->lexeme = root->child->lexeme;
-		
-	root->idkind = _CONST_;
 	
 	root->type = (Type)malloc(sizeof(struct Type_));
 	root->type->kind = _BASIC_;
 	root->type->u.basic = _FLOAT_;
+
+#ifdef DEBUG
+	printf("enter exp__float()\n");
+#endif
 }
