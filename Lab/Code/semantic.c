@@ -41,6 +41,7 @@ void dec__vardec(struct Node*);
 void dec__vardec_assignop_exp(struct Node*);
 void exp__exp_assignop_exp(struct Node*);
 void exp__exp_logicalop_exp(struct Node*);
+void exp__exp_relationop_exp(struct Node*);
 void exp__exp_arithop_exp(struct Node*);
 void exp__lp_exp_rp(struct Node*);
 void exp__minus_exp(struct Node*);
@@ -91,10 +92,10 @@ void semanticAnalysis(struct Node* root){
 	case DecList__Dec_COMMA_DecList:declist__dec_comma_declist(root); break;
 	case Dec__VarDec:dec__vardec(root); break;
 	case Dec__VarDec_ASSIGNOP_Exp:dec__vardec_assignop_exp(root); break;
-	case Exp__Exp_ASSIGNOP_Exp: exp__exp_assignop_exp(root); break;
+	case Exp__Exp_ASSIGNOP_Exp: exp__exp_assignop_exp(root); break;//=
 	case Exp__Exp_AND_Exp:
-	case Exp__Exp_OR_Exp:
-	case Exp__Exp_RELOP_Exp: exp__exp_logicalop_exp(root); break;
+	case Exp__Exp_OR_Exp:exp__exp_logicalop_exp(root); break;
+	case Exp__Exp_RELOP_Exp: exp__exp_relationop_exp(root); break;//关系操作
 	case Exp__Exp_PLUS_Exp:
 	case Exp__Exp_MINUS_Exp:
 	case Exp__Exp_STAR_Exp:
@@ -113,7 +114,7 @@ void semanticAnalysis(struct Node* root){
 	case Args__Exp:args__exp(root); break;
 	
 	default:depthTraversal(root);break;
- 	}
+  	}
 }
 
 //从左到右深度遍历
@@ -489,8 +490,8 @@ void stmt__ifwhile(struct Node* root) {
 	semanticAnalysis(exp);
 
 	//check type
-	if(exp->type->kind != _BASIC_ || exp->type->u.basic != _INT_) { //////NEED TO MODIFY
-		printf("Error type 7 at Line %d: Type mismatched.\n", exp->lineno);
+	if(exp->type->kind != _BASIC_ || exp->type->u.basic != _INT_) { 
+		printf("Error type 7 at Line %d: The condition of statement has a wrong type.\n", exp->lineno);
 	}
 
 	struct Node* p = exp->nextSibling;
@@ -618,6 +619,7 @@ void exp__exp_logicalop_exp(struct Node* root) {
 	semanticAnalysis(exp1);
 	semanticAnalysis(exp2);
 
+	// int
 	if(exp1->type->kind != _BASIC_ || exp1->type->u.basic != _INT_) {
 		printf("Error type 7 at Line %d: operand \"%s\" must be integer.\n", root->lineno, exp1->lexeme);
 	}
@@ -625,7 +627,36 @@ void exp__exp_logicalop_exp(struct Node* root) {
          printf("Error type 7 at Line %d: operand \"%s\" must be integer.\n", root->lineno, exp2->lexeme);
      }
 
-	root->type = exp1->type;
+	// 结果为int类型
+	root->type = (Type)malloc(sizeof(struct Type_));
+	root->type->kind = _BASIC_;
+	root->type->u.basic = _INT_;
+}
+
+void exp__exp_relationop_exp(struct Node* root) {
+	struct Node* exp1 = root->child;
+	struct Node* exp2 = exp1->nextSibling->nextSibling;
+
+	semanticAnalysis(exp1);
+	semanticAnalysis(exp2);
+
+	// int/float
+	if(exp1->type->kind != _BASIC_) {
+		printf("Error type 7 at Line %d: operand \"%s\" must be integer or float.\n",root->lineno, exp1->lexeme);
+     }
+	if(exp2->type->kind != _BASIC_) {
+		printf("Error type 7 at Line %d: operand \"%s\" must be integer or float.\n",root->lineno, exp2->lexeme);
+     }
+
+	// 类型匹配
+	if(!isTypeEquals(exp1->type, exp2->type)) {
+		printf("Error type 7 at Line %d: Type mismatched for operands.\n", root->lineno);
+	}
+	
+	// 结果为int类型
+	root->type = (Type)malloc(sizeof(struct Type_));
+	root->type->kind = _BASIC_;
+	root->type->u.basic = _INT_;
 }
 
 void exp__exp_arithop_exp(struct Node* root) {
@@ -635,6 +666,7 @@ void exp__exp_arithop_exp(struct Node* root) {
 	semanticAnalysis(exp1);
 	semanticAnalysis(exp2);
 
+	// int/float
 	if(exp1->type->kind != _BASIC_) {
 		printf("Error type 7 at Line %d: operand \"%s\" must be integer or float.\n",root->lineno, exp1->lexeme);
      }
