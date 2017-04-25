@@ -32,7 +32,6 @@ void stmt__exp_semi(struct Node*);
 void stmt__compst(struct Node*);
 void stmt__return_exp_semi(struct Node*);
 void stmt__ifwhile(struct Node*);
-void stmt__other(struct Node*);
 void deflist__def_deflist(struct Node*);
 void def__specifier_declist_semi(struct Node*);
 void declist__dec(struct Node*);
@@ -81,7 +80,7 @@ void semanticAnalysis(struct Node* root){
 	case Compst__LC_DefList_StmtList_RC: compst__lc_deflist_stmtlist_rc(root); break;
 	case StmtList__Stmt_StmtList: stmtlist__stmt_stmtlist(root); break;
 	//case Stmt__Exp_SEMI:break;
-	//case Stmt__Compst:break;
+	case Stmt__Compst: stmt__compst(root); break;
 	case Stmt__RETURN_Exp_SEMI: stmt__return_exp_semi(root); break; 
 	case Stmt__IF_LP_Exp_RP_Stmt: stmt__ifwhile(root); break; 
 	case Stmt__IF_LP_Exp_RP_Stmt_else_Stmt:stmt__ifwhile(root); break;
@@ -450,6 +449,11 @@ void stmtlist__stmt_stmtlist(struct Node* root) {
 	struct Node* stmt = root->child;
 	struct Node* stmtlist = stmt->nextSibling;
 
+#ifdef DEBUG
+	printf("enter stmtlist__stmt_stmtlist()\nroot->type---");
+	printType(root->type);
+#endif
+
 	stmt->retType = root->retType;
 	semanticAnalysis(stmt);
 
@@ -457,6 +461,12 @@ void stmtlist__stmt_stmtlist(struct Node* root) {
 		stmtlist->retType = root->retType;
 		semanticAnalysis(stmtlist);
 	}
+}
+
+void stmt__compst(struct Node* root) {
+	struct Node* compst = root->child;
+	compst->retType = root->retType;
+	semanticAnalysis(compst);
 }
 
 void stmt__return_exp_semi(struct Node* root) {
@@ -467,20 +477,16 @@ void stmt__return_exp_semi(struct Node* root) {
 
 	semanticAnalysis(exp);
 
+#ifdef DEBUG
+	printf("enter stmt__return_exp_semi():\n root->retType--");
+	printType(root->retType);
+	printf("exp->type--");
+	printType(exp->type);
+#endif
+
 	//check type
 	if(!isTypeEquals(root->retType, exp->type)) {
 		printf("Error type 8 at Line %d: Type mismatched for return.\n", root->lineno);
-	}
-}
-
-void stmt__other(struct Node* root) {
-	struct Node* p = root->child;
-
-	while(p != NULL){
-		p->type = root->type;
-		semanticAnalysis(p);
-
-		p = p->nextSibling;
 	}
 }
 
@@ -496,6 +502,7 @@ void stmt__ifwhile(struct Node* root) {
 
 	struct Node* p = exp->nextSibling;
 	while(p != NULL) {
+		p->retType = root->retType;
 		semanticAnalysis(p);
 		p = p->nextSibling;
 	}
@@ -640,18 +647,13 @@ void exp__exp_relationop_exp(struct Node* root) {
 	semanticAnalysis(exp1);
 	semanticAnalysis(exp2);
 
-	// int/float
-	if(exp1->type->kind != _BASIC_) {
-		printf("Error type 7 at Line %d: operand \"%s\" must be integer or float.\n",root->lineno, exp1->lexeme);
-     }
-	if(exp2->type->kind != _BASIC_) {
-		printf("Error type 7 at Line %d: operand \"%s\" must be integer or float.\n",root->lineno, exp2->lexeme);
-     }
-
-	// 类型匹配
+	// 类型不匹配
 	if(!isTypeEquals(exp1->type, exp2->type)) {
 		printf("Error type 7 at Line %d: Type mismatched for operands.\n", root->lineno);
 	}
+	else if(exp1->type->kind != _BASIC_) {
+		printf("Error type 7 at Line %d: operands \"%s\" and \"%s\" must be integer or float.\n",root->lineno, exp1->lexeme, exp2->lexeme);
+     }
 	
 	// 结果为int类型
 	root->type = (Type)malloc(sizeof(struct Type_));
@@ -666,18 +668,23 @@ void exp__exp_arithop_exp(struct Node* root) {
 	semanticAnalysis(exp1);
 	semanticAnalysis(exp2);
 
-	// int/float
-	if(exp1->type->kind != _BASIC_) {
-		printf("Error type 7 at Line %d: operand \"%s\" must be integer or float.\n",root->lineno, exp1->lexeme);
-     }
-	if(exp2->type->kind != _BASIC_) {
-		printf("Error type 7 at Line %d: operand \"%s\" must be integer or float.\n",root->lineno, exp2->lexeme);
-     }
-
-	// 类型匹配
+	// 类型不匹配
 	if(!isTypeEquals(exp1->type, exp2->type)) {
 		printf("Error type 7 at Line %d: Type mismatched for operands.\n", root->lineno);
+		
+		// 类型上升
+		if(exp1->type->kind == _BASIC_ && exp2->type->kind == _BASIC_) {
+			if(exp1->type->u.basic == _FLOAT_) {
+				root->type = exp1->type;
+			}
+			else root->type = exp2->type;
+				
+			return;
+		}
 	}
+	else if(exp1->type->kind != _BASIC_) {
+		printf("Error type 7 at Line %d: operands \"%s\" and \"%s\" must be integer or float.\n",root->lineno, exp1->lexeme, exp2->lexeme);
+     }
 
 	root->type = exp1->type;
 }
@@ -815,6 +822,9 @@ void exp__exp_lb_exp_rb(struct Node* root) {
 		printf("Error type 12 at Line %d: \"%s\" is not an integer.\n", root->lineno, exp2->lexeme);
 	}
 
+	root->lexeme = (char*)malloc(LEN);
+	strcpy(root->lexeme, exp1->lexeme);
+	strcat(root->lexeme, "[]");
 	root->isLeftVal = true;
 }
 
@@ -827,7 +837,10 @@ void exp__exp_dot_id(struct Node* root) {
 
 	semanticAnalysis(exp1);
 
-	root->lexeme = id->lexeme;
+	root->lexeme = (char*)malloc(LEN);
+	strcpy(root->lexeme, exp1->lexeme);
+	strcat(root->lexeme, ".");
+	strcat(root->lexeme, id->lexeme);
 	root->isLeftVal = true;
 
 	// check type
@@ -858,10 +871,10 @@ void exp__id(struct Node* root) {
 
 	// 符号未定义
 	struct Symbol* p = lookupVariable(name);
-	if(p == NULL) {
+	if(p == NULL || p->idkind != _VARIABLE_) {
 		printf("Error type 1 at Line %d: Undefined variable \"%s\"\n", root->lineno, name);
 		return;
-	}	
+	}
 
 #ifdef DEBUG
 	printf("enter exp__id()\n\t %s type ---", name);
