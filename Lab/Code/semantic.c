@@ -31,6 +31,7 @@ void stmtlist__stmt_stmtlist(struct Node*);
 void stmt__exp_semi(struct Node*);
 void stmt__compst(struct Node*);
 void stmt__return_exp_semi(struct Node*);
+void stmt__ifwhile(struct Node*);
 void stmt__other(struct Node*);
 void deflist__def_deflist(struct Node*);
 void def__specifier_declist_semi(struct Node*);
@@ -81,9 +82,9 @@ void semanticAnalysis(struct Node* root){
 	//case Stmt__Exp_SEMI:break;
 	//case Stmt__Compst:break;
 	case Stmt__RETURN_Exp_SEMI: stmt__return_exp_semi(root); break; 
-	case Stmt__IF_LP_Exp_RP_Stmt: stmt__other(root); break; 
-	case Stmt__IF_LP_Exp_RP_Stmt_else_Stmt:stmt__other(root); break;
-	case Stmt__WHILE_LP_Exp_RP_Stmt:stmt__other(root); break;
+	case Stmt__IF_LP_Exp_RP_Stmt: stmt__ifwhile(root); break; 
+	case Stmt__IF_LP_Exp_RP_Stmt_else_Stmt:stmt__ifwhile(root); break;
+	case Stmt__WHILE_LP_Exp_RP_Stmt:stmt__ifwhile(root); break;
 	case DefList__Def_DefList: deflist__def_deflist(root); break;
 	case Def__Specifier_DecList_SEMI:def__specifier_declist_semi(root); break;
 	case DecList__Dec:declist__dec(root); break;
@@ -252,7 +253,7 @@ void structspecifier__struct_opttag_lc_deflist_rc(struct Node* root) {
 	structinfo[top].structType->kind = _STRUCTURE_; // type kind
 	structinfo[top].structType->u.structure = NULL;
 
-	semanticAnalysis(deflist);
+	semanticAnalysis(deflist); ///////////
 	
 	//structspecifier type
 	root->type = structinfo[top].structType;
@@ -427,7 +428,7 @@ void paramdec__specifier_vardec(struct Node* root) {
 	vardec->type = specifier->type;
 	semanticAnalysis(vardec);
 
-	root->argv[root->argc] = specifier->type;
+	root->argv[root->argc] = vardec->type;
 	root->argc++;
 }
 
@@ -482,7 +483,22 @@ void stmt__other(struct Node* root) {
 	}
 }
 
+void stmt__ifwhile(struct Node* root) {
+	struct Node* exp = root->child->nextSibling->nextSibling;
 
+	semanticAnalysis(exp);
+
+	//check type
+	if(exp->type->kind != _BASIC_ || exp->type->u.basic != _INT_) { //////NEED TO MODIFY
+		printf("Error type 7 at Line %d: Type mismatched.\n", exp->lineno);
+	}
+
+	struct Node* p = exp->nextSibling;
+	while(p != NULL) {
+		semanticAnalysis(p);
+		p = p->nextSibling;
+	}
+}
 
 void deflist__def_deflist(struct Node* root) {
 #ifdef DEBUG
@@ -542,6 +558,13 @@ void dec__vardec_assignop_exp(struct Node* root) {
 
 	vardec->type = root->type;
 	semanticAnalysis(vardec);
+
+	// check error type 15
+	if(isBuildingStruct) {
+		printf("Error type 15 at Line %d: The field is initialized\n", root->lineno);
+		return;
+	}
+	
 
 	semanticAnalysis(exp);
 
