@@ -56,7 +56,7 @@ void addElement(struct Node* node){
 	}
 	else sym->type = node->type;//变量类型
 
-	sym->addr = "";
+	sym->addr = "\0";
 	sym->next=table[pos];
 	table[pos]=sym;
 }

@@ -4,6 +4,7 @@
 
 bool isBuildingStruct = false;
 int top = -1;
+int count = 1;
 
 void depthTraversal(struct Node* );
 bool isTypeEquals(Type t1, Type t2);
@@ -114,6 +115,27 @@ void semanticAnalysis(struct Node* root){
 	
 	default:depthTraversal(root);break;
   	}
+}
+
+char* my_itoa(int count) {
+	char* temp = (char*)malloc(LEN);
+	int i = 0;
+	while(count != 0) {
+		temp[i] = count % 10 + '0';
+		count /= 10;
+
+		i++;
+	}
+
+	int m = 0;
+	int n = i-1;
+	for(; m<n; m++, n--) {
+		int t = temp[m];
+		temp[m] = temp[n];
+		temp[n] = t;
+	}
+
+	return temp;
 }
 
 //从左到右深度遍历
@@ -236,18 +258,25 @@ void structspecifier__struct_opttag_lc_deflist_rc(struct Node* root) {
 #endif
 	// initial
 	isBuildingStruct = true;
+	top++;
 
 	struct Node* opttag = root->child->nextSibling;
-	struct Node* deflist = opttag->nextSibling->nextSibling;
+	struct Node* deflist;
 
 	// structspecifier idkind
 	root->idkind = _TYPE_;
 	
 	// structspecifier name
 	semanticAnalysis(opttag);
+	
 	root->lexeme = opttag->lexeme;
+	if(strcmp(root->lexeme, "{")==0) {
+		root->lexeme = my_itoa(count);
+		count++;
+		deflist = opttag->nextSibling;
+	}
+	else deflist = opttag->nextSibling->nextSibling;
 
-	top++;
 	structinfo[top].structName = root->lexeme;
 	structinfo[top].structType = (Type)malloc(sizeof(struct Type_));
 	structinfo[top].structType->kind = _STRUCTURE_; // type kind
@@ -260,11 +289,16 @@ void structspecifier__struct_opttag_lc_deflist_rc(struct Node* root) {
 
 	// check table
 	char* name = root->lexeme;
-	struct Symbol* p = lookupVariable(name);
-	if(p != NULL) {
-		printf("Error type 16 at Line %d: Duplicated name \"%s\".\n", root->lineno, name);
+#ifdef DEBUG
+	printf("struct name: %s\n", name);
+#endif
+	if(!isdigit(name[0])) {
+		struct Symbol* p = lookupVariable(name);
+		if(p != NULL) {
+			printf("Error type 16 at Line %d: Duplicated name \"%s\".\n", root->lineno, name);
+		}
+		else addElement(root);
 	}
-	else addElement(root);
 
 	// re-initial
 	isBuildingStruct = false;
@@ -300,8 +334,10 @@ void tag__id(struct Node* root) {
 
 void vardec__id(struct Node* root) {
 	struct Node* id = root->child;	
-	
+
+	id->idkind = _VARIABLE_;
 	id->type = root->type;
+
 	char* name = id->lexeme;
 	
 	// 添加到域
@@ -324,18 +360,31 @@ void vardec__id(struct Node* root) {
 	// redefination
 	struct Symbol* sym = lookupVariable(name);
 	if(sym == NULL) {
-		if(isBuildingStruct)addField(id, structinfo[top].structName);
+		if(isBuildingStruct){
+#ifdef DEBUG
+			printf("%s..\n", structinfo[top].structName);
+#endif
+			addField(id, structinfo[top].structName);
+		}
 		else addElement(id);
 	}
 	else{
 		if(isBuildingStruct && strcmp(sym->addr, structinfo[top].structName)==0) 
 		{
+#ifdef DEBUG
+			printf("sym->addr: %s \t structinfo[top].structName: %s\n", sym->addr, structinfo[top].structName);
+#endif
 			printf("Error type 15 at Line %d: Redefined field \"%s\".\n", root->lineno, name);
 		}
 		else {
+#ifdef DEBUG
+			printf("sym->addr: %s \t structinfo[top].structName: %s\n", sym->addr, structinfo[top].structName);
+#endif
 			printf("Error type 3 at Line %d: Redefined variable \"%s\"\n",root->lineno, name);
 		}
 	}
+
+	root->lexeme = name;
 }
 
 void vardec__vardec_lb_int_rb(struct Node* root) {
@@ -377,6 +426,8 @@ void fundec__id_lp_varlist_rp(struct Node* root) {
 		printf("Error type 4 at Line %d: Redefined function \"%s\"\n", root->lineno, name);
 	}
 	else addElement(id);
+
+	root->lexeme = name;
 }
 
 void fundec__id_lp_rp(struct Node* root) {
@@ -392,6 +443,8 @@ void fundec__id_lp_rp(struct Node* root) {
 		printf("Error type 4 at Line %d: Redefined function \"%s\"\n", root->lineno, name);
 	}
 	else addElement(id);
+
+	root->lexeme = name;
 }
 
 void varlist__paramdec_comma_varlist(struct Node* root) {
@@ -628,10 +681,10 @@ void exp__exp_logicalop_exp(struct Node* root) {
 
 	// int
 	if(exp1->type->kind != _BASIC_ || exp1->type->u.basic != _INT_) {
-		printf("Error type 7 at Line %d: operand \"%s\" must be integer.\n", root->lineno, exp1->lexeme);
+		printf("Error type 7 at Line %d: operand \"%s\" of logical operation must be integer.\n", root->lineno, exp1->lexeme);
 	}
 	if(exp2->type->kind != _BASIC_ || exp2->type->u.basic != _INT_) {
-         printf("Error type 7 at Line %d: operand \"%s\" must be integer.\n", root->lineno, exp2->lexeme);
+        printf("Error type 7 at Line %d: operand \"%s\" of logical operation must be integer.\n", root->lineno, exp2->lexeme);
      }
 
 	// 结果为int类型
@@ -652,7 +705,7 @@ void exp__exp_relationop_exp(struct Node* root) {
 		printf("Error type 7 at Line %d: Type mismatched for operands.\n", root->lineno);
 	}
 	else if(exp1->type->kind != _BASIC_) {
-		printf("Error type 7 at Line %d: operands \"%s\" and \"%s\" must be integer or float.\n",root->lineno, exp1->lexeme, exp2->lexeme);
+		printf("Error type 7 at Line %d: operands of relational operation must be integer or float.\n",root->lineno);
      }
 	
 	// 结果为int类型
@@ -683,7 +736,7 @@ void exp__exp_arithop_exp(struct Node* root) {
 		}
 	}
 	else if(exp1->type->kind != _BASIC_) {
-		printf("Error type 7 at Line %d: operands \"%s\" and \"%s\" must be integer or float.\n",root->lineno, exp1->lexeme, exp2->lexeme);
+		printf("Error type 7 at Line %d: operands of arithmetic operation must be integer or float.\n",root->lineno);
      }
 
 	root->type = exp1->type;
@@ -701,7 +754,7 @@ void exp__minus_exp(struct Node* root) {
 	semanticAnalysis(exp1);
 
 	if(exp1->type->kind != _BASIC_) {
-		printf("Error type 7 at Line %d: operand \"%s\" must be integer or float.\n",root->lineno, exp1->lexeme);
+		printf("Error type 7 at Line %d: operand \"%s\" of arithmetic opration must be integer or float.\n",root->lineno, exp1->lexeme);
      }
 
 	root->type = exp1->type;
@@ -712,7 +765,7 @@ void exp__not_exp(struct Node* root) {
 	semanticAnalysis(exp1);
 
 	if(exp1->type->kind != _BASIC_ || exp1->type->u.basic != _INT_) {
-		printf("Error type 7 at Line %d: operand \"%s\" must be integer.\n",root->lineno, exp1->lexeme);
+		printf("Error type 7 at Line %d: operand \"%s\" of logical opration must be integer.\n",root->lineno, exp1->lexeme);
 	}
 
 	root->type = exp1->type;
@@ -723,7 +776,10 @@ void exp__id_lp_args_rp(struct Node* root) {
 	struct Node* args = id->nextSibling->nextSibling;
 
 	char* name = id->lexeme;
-	root->lexeme = name;
+
+	root->lexeme = (char*)malloc(LEN);
+	strcpy(root->lexeme, name);
+	strcat(root->lexeme, "()");
 	
 	struct Symbol* p = lookupFunction(name);
 	
@@ -765,7 +821,7 @@ void exp__id_lp_args_rp(struct Node* root) {
 		}
 	}
 	if(!flag) {
-		printf("Error type 9 at Line %d: Function \"%s\" is not applicable for arguments.\n", root->lineno, name, root->lineno, name);
+		printf("Error type 9 at Line %d: Function \"%s\" is not applicable for arguments.\n", root->lineno, name);
 	}
 
 	// 综合属性
@@ -778,6 +834,7 @@ void args__exp_comma_args(struct Node* root) {
 
 	int argc = root->argc;
 	Type* argv = root->argv;
+	
 	semanticAnalysis(exp);
 	
 	argv[argc] = exp->type;
