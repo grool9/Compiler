@@ -721,6 +721,13 @@ void exp__exp_arithop_exp(struct Node* root) {
 	semanticAnalysis(exp1);
 	semanticAnalysis(exp2);
 
+#ifdef DEBUG
+	printf("arithop: exp1:%s---", exp1->lexeme);
+	printType(exp1->type);
+	printf("exp2:%s---",exp2->lexeme);
+	printType(exp2->type);
+#endif
+
 	// 类型不匹配
 	if(!isTypeEquals(exp1->type, exp2->type)) {
 		printf("Error type 7 at Line %d: Type mismatched for operands.\n", root->lineno);
@@ -738,8 +745,7 @@ void exp__exp_arithop_exp(struct Node* root) {
 	else if(exp1->type->kind != _BASIC_) {
 		printf("Error type 7 at Line %d: operands of arithmetic operation must be integer or float.\n",root->lineno);
      }
-
-	root->type = exp1->type;
+	else root->type = exp1->type;
 }
 
 void exp__lp_exp_rp(struct Node* root) {
@@ -915,7 +921,7 @@ void exp__exp_dot_id(struct Node* root) {
 	// 结构体中没有这个域
 	if(p == NULL) {
 		printf("Error type 14 at Line %d: Non-existent field \"%s\".\n", root->lineno, id->lexeme);
-		printType(root->type);
+		//printType(root->type);
 	} 
 	else root->type = p->type;
 }
