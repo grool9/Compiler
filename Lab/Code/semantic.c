@@ -175,6 +175,8 @@ bool isTypeEquals(Type t1, Type t2) {
 							 return true;
 						 }
 	}
+	
+	return false;
 }
 
 void extdef__specifier_extdeclist_semi(struct Node* root) {
@@ -915,6 +917,7 @@ void exp__exp_dot_id(struct Node* root) {
 	// 结构体中没有这个域
 	if(p == NULL) {
 		printf("Error type 14 at Line %d: Non-existent field \"%s\".\n", root->lineno, id->lexeme);
+		printType(root->type);
 	} 
 	else root->type = p->type;
 }
