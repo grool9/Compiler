@@ -107,7 +107,7 @@ void printType(Type type) {
 		printf("structure\n");
 		FieldList p = type->u.structure;
 		while(p != NULL) {
-			printf("name: %d\n", p->name);
+			printf("name: %s\n", p->name);
 			printType(p->type);
 			p = p->tail;
 		}

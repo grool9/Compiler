@@ -2,7 +2,6 @@
 
 //#define DEBUG
 
-bool isBuildingStruct = false;
 int top = -1;
 int count = 1;
 
@@ -259,7 +258,6 @@ void structspecifier__struct_opttag_lc_deflist_rc(struct Node* root) {
 	printf("Enter structspecifer__struct_opttag_lc_deflist_rc\n");
 #endif
 	// initial
-	isBuildingStruct = true;
 	top++;
 
 	struct Node* opttag = root->child->nextSibling;
@@ -293,6 +291,7 @@ void structspecifier__struct_opttag_lc_deflist_rc(struct Node* root) {
 	char* name = root->lexeme;
 #ifdef DEBUG
 	printf("struct name: %s\n", name);
+	printType(root->type);
 #endif
 	if(!isdigit(name[0])) {
 		struct Symbol* p = lookupVariable(name);
@@ -303,7 +302,6 @@ void structspecifier__struct_opttag_lc_deflist_rc(struct Node* root) {
 	}
 
 	// re-initial
-	isBuildingStruct = false;
 	top--;
 }
 
@@ -343,7 +341,7 @@ void vardec__id(struct Node* root) {
 	char* name = id->lexeme;
 	
 	// 添加到域
-	if(isBuildingStruct) {
+	if(top != -1) {
 		FieldList p = (FieldList)malloc(sizeof(struct FieldList_));
 		p->name = name;
 		p->type = id->type;
@@ -362,7 +360,7 @@ void vardec__id(struct Node* root) {
 	// redefination
 	struct Symbol* sym = lookupVariable(name);
 	if(sym == NULL) {
-		if(isBuildingStruct){
+		if(top != -1){
 #ifdef DEBUG
 			printf("%s..\n", structinfo[top].structName);
 #endif
@@ -371,7 +369,7 @@ void vardec__id(struct Node* root) {
 		else addElement(id);
 	}
 	else{
-		if(isBuildingStruct && strcmp(sym->addr, structinfo[top].structName)==0) 
+		if(top != -1 && strcmp(sym->addr, structinfo[top].structName)==0) 
 		{
 #ifdef DEBUG
 			printf("sym->addr: %s \t structinfo[top].structName: %s\n", sym->addr, structinfo[top].structName);
@@ -623,7 +621,7 @@ void dec__vardec_assignop_exp(struct Node* root) {
 	semanticAnalysis(vardec);
 
 	// check error type 15
-	if(isBuildingStruct) {
+	if(top != -1) {
 		printf("Error type 15 at Line %d: The field is initialized\n", root->lineno);
 		return;
 	}
