@@ -760,7 +760,7 @@ void exp__minus_exp(struct Node* root) {
 	semanticAnalysis(exp1);
 
 	if(exp1->type->kind != _BASIC_) {
-		printf("Error type 7 at Line %d: operand \"%s\" of arithmetic opration must be integer or float.\n",root->lineno, exp1->lexeme);
+		printf("Error type 7 at Line %d: operand \"%s\" of arithmetic operation must be integer or float.\n",root->lineno, exp1->lexeme);
      }
 
 	root->type = exp1->type;
@@ -771,7 +771,7 @@ void exp__not_exp(struct Node* root) {
 	semanticAnalysis(exp1);
 
 	if(exp1->type->kind != _BASIC_ || exp1->type->u.basic != _INT_) {
-		printf("Error type 7 at Line %d: operand \"%s\" of logical opration must be integer.\n",root->lineno, exp1->lexeme);
+		printf("Error type 7 at Line %d: operand \"%s\" of logical operation must be integer.\n",root->lineno, exp1->lexeme);
 	}
 
 	root->type = exp1->type;

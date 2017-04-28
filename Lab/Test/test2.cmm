@@ -1,6 +1,31 @@
-int main(){
-	float a[10][2];
-	int i;
-	a[5,3] = 1.5;
-	if(a[1][2] == 0) i = 1 else i = 0; 
+struct Node 
+{
+	int c;
+	int c = 0;
+	struct Node mm =1;
+} b;
+
+struct Type
+{
+	int ass,css;
+};
+
+struct Node inc(int temp1, int temp2) {
+	int x,y,a[10][18];
+	float t = 1.9;
+	struct Type p;
+
+	x = y + 3;
+	a[1][1] = 1;
+	b.c = x;
+
+	return p;
+}
+
+int main() {
+	struct Type type[10];
+	a = a();
+	type[1.5] = b;
+	b= type[0.9];
+	b.b = 1;
 }
