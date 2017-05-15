@@ -13,7 +13,6 @@
 struct Node* root = NULL;
 
 int pasterrline=0;
-//char pasttext[LEN]="\0";
 
 %}
 

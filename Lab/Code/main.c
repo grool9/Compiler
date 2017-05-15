@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include "common.h"
 
-extern int isWrong;
 extern int yylineno;
 extern void yyrestart(FILE*);
 extern void yyparse();
@@ -18,13 +17,17 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
+	// lab1
 	yylineno=1;
 	yyrestart(f);
 	yyparse();
-	
-	//if(!isWrong)outputTree(root,0);
+
+	// lab2
 	initTable();
 	if(!isWrong)semanticAnalysis(root);
+
+	// lab3
+	if(!isWrong)printf("hello lab3\n");
 
 	return 0;
 } 
