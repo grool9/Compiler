@@ -289,6 +289,7 @@ static void structspecifier__struct_opttag_lc_deflist_rc(struct Node* root) {
 		struct Symbol* p = lookupVariable(name);
 		if(p != NULL) {
 			printf("Error type 16 at Line %d: Duplicated name \"%s\".\n", root->lineno, name);
+			isWrong = 1;
 		}
 		else addElement(root);
 	}
@@ -307,6 +308,7 @@ static void structspecifier__struct_tag(struct Node* root) {
 
 	if(sym == NULL || sym->idkind != _TYPE_) {
 		printf("Error type 17 at Line %d: Undefined structure \"%s\".\n", root->lineno, name);
+		isWrong = 1;
 		return;
 	}
 
@@ -361,9 +363,11 @@ static void vardec__id(struct Node* root) {
 		if(top != -1 && strcmp(sym->addr, structinfo[top].structName)==0) 
 		{
 			printf("Error type 15 at Line %d: Redefined field \"%s\".\n", root->lineno, name);
+			isWrong = 1;
 		}
 		else {
 			printf("Error type 3 at Line %d: Redefined variable \"%s\"\n",root->lineno, name);
+			isWrong = 1;
 		}
 	}
 
@@ -405,6 +409,7 @@ static void fundec__id_lp_varlist_rp(struct Node* root) {
 	struct Symbol* p = lookupFunction(name);
 	if(p != NULL && p->idkind == _FUNCTION_){
 		printf("Error type 4 at Line %d: Redefined function \"%s\"\n", root->lineno, name);
+		isWrong = 1;
 	}
 	else addElement(id);
 
@@ -422,6 +427,7 @@ static void fundec__id_lp_rp(struct Node* root) {
 	struct Symbol* p = lookupFunction(name);
 	if(p != NULL && p->idkind == _FUNCTION_){
 		printf("Error type 4 at Line %d: Redefined function \"%s\"\n", root->lineno, name);
+		isWrong = 1;
 	}
 	else addElement(id);
 
@@ -502,6 +508,7 @@ static void stmt__return_exp_semi(struct Node* root) {
 	//check type
 	if(!isTypeEquals(root->retType, exp->type)) {
 		printf("Error type 8 at Line %d: Type mismatched for return.\n", root->lineno);
+		isWrong = 1;
 	}
 }
 
@@ -513,6 +520,7 @@ static void stmt__ifwhile(struct Node* root) {
 	//check type
 	if(exp->type->kind != _BASIC_ || exp->type->u.basic != _INT_) { 
 		printf("Error type 7 at Line %d: The condition of statement has a wrong type.\n", exp->lineno);
+		isWrong = 1;
 	}
 
 	struct Node* p = exp->nextSibling;
@@ -579,6 +587,7 @@ static void dec__vardec_assignop_exp(struct Node* root) {
 	// check error type 15
 	if(top != -1) {
 		printf("Error type 15 at Line %d: The field is initialized\n", root->lineno);
+		isWrong = 1;
 		return;
 	}
 	
@@ -588,6 +597,7 @@ static void dec__vardec_assignop_exp(struct Node* root) {
 	//等号两边类型匹配
 	if(!isTypeEquals(vardec->type, exp->type)) {
          printf("Error type 5 at Line %d: Type mismatched for assignment.\n",root->lineno);
+	 isWrong = 1;
      }
 }
 
@@ -601,11 +611,13 @@ static void exp__exp_assignop_exp(struct Node* root) {
 	//等号左边为右值
 	if(!exp1->isLeftVal) {
 		printf("Error type 6 at Line %d: The left-hand side of an assignment must be a variable.\n", root->lineno);
+		isWrong = 1;
 	}
 
 	//等号两边类型匹配
 	if(!isTypeEquals(exp1->type, exp2->type)) {
 		printf("Error type 5 at Line %d: Type mismatched for assignment.\n", root->lineno);
+		isWrong = 1;
 	}
 
 	root->type = exp1->type;
@@ -621,9 +633,11 @@ static void exp__exp_logicalop_exp(struct Node* root) {
 	// int
 	if(exp1->type->kind != _BASIC_ || exp1->type->u.basic != _INT_) {
 		printf("Error type 7 at Line %d: operand \"%s\" of logical operation must be integer.\n", root->lineno, exp1->lexeme);
+		isWrong = 1;
 	}
 	if(exp2->type->kind != _BASIC_ || exp2->type->u.basic != _INT_) {
-        printf("Error type 7 at Line %d: operand \"%s\" of logical operation must be integer.\n", root->lineno, exp2->lexeme);
+        	printf("Error type 7 at Line %d: operand \"%s\" of logical operation must be integer.\n", root->lineno, exp2->lexeme);
+		isWrong = 1;
      }
 
 	// 结果为int类型
@@ -642,9 +656,11 @@ static void exp__exp_relationop_exp(struct Node* root) {
 	// 类型不匹配
 	if(!isTypeEquals(exp1->type, exp2->type)) {
 		printf("Error type 7 at Line %d: Type mismatched for operands.\n", root->lineno);
+		isWrong = 1;
 	}
 	else if(exp1->type->kind != _BASIC_) {
 		printf("Error type 7 at Line %d: operands of relational operation must be integer or float.\n",root->lineno);
+		isWrong = 1;
      }
 	
 	// 结果为int类型
@@ -663,6 +679,7 @@ static void exp__exp_arithop_exp(struct Node* root) {
 	// 类型不匹配
 	if(!isTypeEquals(exp1->type, exp2->type)) {
 		printf("Error type 7 at Line %d: Type mismatched for operands.\n", root->lineno);
+		isWrong = 1;
 		
 		// 类型上升
 		if(exp1->type->kind == _BASIC_ && exp2->type->kind == _BASIC_) {
@@ -676,6 +693,7 @@ static void exp__exp_arithop_exp(struct Node* root) {
 	}
 	else if(exp1->type->kind != _BASIC_) {
 		printf("Error type 7 at Line %d: operands of arithmetic operation must be integer or float.\n",root->lineno);
+		isWrong = 1;
      }
 	else root->type = exp1->type;
 }
@@ -693,6 +711,7 @@ static void exp__minus_exp(struct Node* root) {
 
 	if(exp1->type->kind != _BASIC_) {
 		printf("Error type 7 at Line %d: operand \"%s\" of arithmetic operation must be integer or float.\n",root->lineno, exp1->lexeme);
+		isWrong = 1;
      }
 
 	root->type = exp1->type;
@@ -704,6 +723,7 @@ static void exp__not_exp(struct Node* root) {
 
 	if(exp1->type->kind != _BASIC_ || exp1->type->u.basic != _INT_) {
 		printf("Error type 7 at Line %d: operand \"%s\" of logical operation must be integer.\n",root->lineno, exp1->lexeme);
+		isWrong = 1;
 	}
 
 	root->type = exp1->type;
@@ -724,12 +744,14 @@ static void exp__id_lp_args_rp(struct Node* root) {
 	// 方程未定义
 	if(p == NULL) {
 		printf("Error type 2 at Line %d: Undefined function \"%s\"\n", root->lineno, name);
+		isWrong = 1;
 		return;
 	}
 
 	//不是方程
 	else if(p->idkind != _FUNCTION_) {
 		printf("Error type 11 at Line %d: \"%s\" is not a fuction.\n", root->lineno, name);
+		isWrong = 1;
 		return;
 	}
 
@@ -753,6 +775,7 @@ static void exp__id_lp_args_rp(struct Node* root) {
 	}
 	if(!flag) {
 		printf("Error type 9 at Line %d: Function \"%s\" is not applicable for arguments.\n", root->lineno, name);
+		isWrong = 1;
 	}
 
 	// 综合属性
@@ -802,12 +825,14 @@ static void exp__exp_lb_exp_rb(struct Node* root) {
 	// check type
 	if(exp1->type->kind != _ARRAY_) {
 		printf("Error type 10 at Line %d: \"%s\" is not an array.\n", root->lineno, exp1->lexeme);
+		isWrong = 1;
 	}
 	else root->type = exp1->type->u.array.elem;
 
 	// [?]
 	if(exp2->type->kind != _BASIC_ || exp2->type->u.basic != _INT_) {
 		printf("Error type 12 at Line %d: \"%s\" is not an integer.\n", root->lineno, exp2->lexeme);
+		isWrong = 1;
 	}
 
 	root->lexeme = (char*)malloc(LEN);
@@ -831,6 +856,7 @@ static void exp__exp_dot_id(struct Node* root) {
 	// check type
 	if(exp1->type->kind != _STRUCTURE_) {
 		printf("Error type 13 at Line %d: Illegal use of \".\"\n", root->lineno);
+		isWrong = 1;
 		return;// 不继续检查域了
 	}
 
@@ -843,6 +869,7 @@ static void exp__exp_dot_id(struct Node* root) {
 	// 结构体中没有这个域
 	if(p == NULL) {
 		printf("Error type 14 at Line %d: Non-existent field \"%s\".\n", root->lineno, id->lexeme);
+		isWrong = 1;
 		//printType(root->type);
 	} 
 	else root->type = p->type;
@@ -859,6 +886,7 @@ static void exp__id(struct Node* root) {
 	struct Symbol* p = lookupVariable(name);
 	if(p == NULL || p->idkind != _VARIABLE_) {
 		printf("Error type 1 at Line %d: Undefined variable \"%s\"\n", root->lineno, name);
+		isWrong = 1;
 		return;
 	}
 

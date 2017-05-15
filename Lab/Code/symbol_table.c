@@ -16,6 +16,26 @@ void initTable(){
 	for(;i<N;i++){
 		table[i]=NULL;
 	}
+	
+	// lab3
+	Type t = (Type)malloc(sizeof(struct Type_));
+	t->kind = _BASIC_;
+	t->u.basic=_INT_;
+
+	// read
+	struct Node* n = (struct Node* )malloc(sizeof(struct Node));
+	n->lexeme ="read";
+	n->idkind = _FUNCTION_;
+	n->retType = t;
+	n->argc = 0;
+	n->argv = (Type*)malloc(sizeof(Type)*MAXARGC);
+	addElement(n);
+
+	// write
+	n->lexeme = "write";
+	n->argc = 1;
+	n->argv[0] = t;
+	addElement(n);
 }
 
 //add
@@ -39,10 +59,6 @@ void addField(struct Node* node, char* structName){
 void addElement(struct Node* node){
 	char* name = node->lexeme;
 	int pos=hash_pjw(name);
-
-#ifdef DEBUG
-	printf("add element:%s\t pos:%d\n",name,pos);
-#endif
 
 	struct Symbol* sym = (struct Symbol*)malloc(sizeof(struct Symbol));
 	sym->name = (char*)malloc(LEN);//变量名称

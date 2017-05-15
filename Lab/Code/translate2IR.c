@@ -1,55 +1,55 @@
 #include "common.h"
 
-static void depthTraversal(struct Node* );
+static struct InterCode* depthTraversal(struct Node* );
 
-static void extdef__specifier_extdeclist_semi(struct Node*);
-static void extdef__specifier_fundec_compst(struct Node*);
-static void extdef__specifier_semi(struct Node*);
-static void extdeclist__vardec(struct Node*);
-static void extdeclist__vardec_comma_extdeclist(struct Node*);
-static void specifier__type(struct Node*);
-static void specifier__structspecifier(struct Node*);
-static void structspecifier__struct_opttag_lc_deflist_rc(struct Node*);
-static void structspecifier__struct_tag(struct Node*);
-static void opttag__id(struct Node*);
-static void tag__id(struct Node*);
-static void vardec__id(struct Node*);
-static void vardec__vardec_lb_int_rb(struct Node*);
-static void fundec__id_lp_varlist_rp(struct Node*);
-static void fundec__id_lp_rp(struct Node*);
-static void varlist__paramdec_comma_varlist(struct Node*);
-static void varlist__paramdec(struct Node*);
-static void paramdec__specifier_vardec(struct Node*);
-static void compst__lc_deflist_stmtlist_rc(struct Node*);
-static void stmtlist__stmt_stmtlist(struct Node*);
-static void stmt__exp_semi(struct Node*);
-static void stmt__compst(struct Node*);
-static void stmt__return_exp_semi(struct Node*);
-static void stmt__ifwhile(struct Node*);
-static void deflist__def_deflist(struct Node*);
-static void def__specifier_declist_semi(struct Node*);
-static void declist__dec(struct Node*);
-static void declist__dec_comma_declist(struct Node*);
-static void dec__vardec(struct Node*);
-static void dec__vardec_assignop_exp(struct Node*);
-static void exp__exp_assignop_exp(struct Node*);
-static void exp__exp_logicalop_exp(struct Node*);
-static void exp__exp_relationop_exp(struct Node*);
-static void exp__exp_arithop_exp(struct Node*);
-static void exp__lp_exp_rp(struct Node*);
-static void exp__minus_exp(struct Node*);
-static void exp__not_exp(struct Node*);
-static void exp__id_lp_args_rp(struct Node*);
-static void exp__exp_lb_exp_rb(struct Node*);
-static void exp__exp_dot_id(struct Node*);
-static void exp__id(struct Node*);
-static void exp__int(struct Node*);
-static void exp__float(struct Node*);
-static void args__exp_comma_args(struct Node*);
-static void args__exp(struct Node*);
+static struct InterCode* extdef__specifier_extdeclist_semi(struct Node*);
+static struct InterCode* extdef__specifier_fundec_compst(struct Node*);
+static struct InterCode* extdef__specifier_semi(struct Node*);
+static struct InterCode* extdeclist__vardec(struct Node*);
+static struct InterCode* extdeclist__vardec_comma_extdeclist(struct Node*);
+static struct InterCode* specifier__type(struct Node*);
+static struct InterCode* specifier__structspecifier(struct Node*);
+static struct InterCode* structspecifier__struct_opttag_lc_deflist_rc(struct Node*);
+static struct InterCode* structspecifier__struct_tag(struct Node*);
+static struct InterCode* opttag__id(struct Node*);
+static struct InterCode* tag__id(struct Node*);
+static struct InterCode* vardec__id(struct Node*);
+static struct InterCode* vardec__vardec_lb_int_rb(struct Node*);
+static struct InterCode* fundec__id_lp_varlist_rp(struct Node*);
+static struct InterCode* fundec__id_lp_rp(struct Node*);
+static struct InterCode* varlist__paramdec_comma_varlist(struct Node*);
+static struct InterCode* varlist__paramdec(struct Node*);
+static struct InterCode* paramdec__specifier_vardec(struct Node*);
+static struct InterCode* compst__lc_deflist_stmtlist_rc(struct Node*);
+static struct InterCode* stmtlist__stmt_stmtlist(struct Node*);
+static struct InterCode* stmt__exp_semi(struct Node*);
+static struct InterCode* stmt__compst(struct Node*);
+static struct InterCode* stmt__return_exp_semi(struct Node*);
+static struct InterCode* stmt__ifwhile(struct Node*);
+static struct InterCode* deflist__def_deflist(struct Node*);
+static struct InterCode* def__specifier_declist_semi(struct Node*);
+static struct InterCode* declist__dec(struct Node*);
+static struct InterCode* declist__dec_comma_declist(struct Node*);
+static struct InterCode* dec__vardec(struct Node*);
+static struct InterCode* dec__vardec_assignop_exp(struct Node*);
+static struct InterCode* exp__exp_assignop_exp(struct Node*);
+static struct InterCode* exp__exp_logicalop_exp(struct Node*);
+static struct InterCode* exp__exp_relationop_exp(struct Node*);
+static struct InterCode* exp__exp_arithop_exp(struct Node*);
+static struct InterCode* exp__lp_exp_rp(struct Node*);
+static struct InterCode* exp__minus_exp(struct Node*);
+static struct InterCode* exp__not_exp(struct Node*);
+static struct InterCode* exp__id_lp_args_rp(struct Node*);
+static struct InterCode* exp__exp_lb_exp_rb(struct Node*);
+static struct InterCode* exp__exp_dot_id(struct Node*);
+static struct InterCode* exp__id(struct Node*);
+static struct InterCode* exp__int(struct Node*);
+static struct InterCode* exp__float(struct Node*);
+static struct InterCode* args__exp_comma_args(struct Node*);
+static struct InterCode* args__exp(struct Node*);
 
-static void translate(struct Node* root) {
-	if(root==NULL)return;
+static struct InterCode* translate(struct Node* root) {
+	//if(root==NULL)return;
 	
 	switch(root->rule){
 	/*case ExtDef__Specifier_ExtDecList_SEMI: extdef__specifier_extdeclist_semi(root); break;
@@ -100,7 +100,7 @@ static void translate(struct Node* root) {
 	case Exp__Exp_LB_Exp_RB: exp__exp_lb_exp_rb(root); break;
 	case Exp__Exp_DOT_ID: exp__exp_dot_id(root); break;
 	case Exp__ID:exp__id(root); break;*/
-	case Exp__INT: exp__int(root); break;
+	case Exp__INT: return exp__int(root); break;
 	//case Exp__FLOAT: exp__float(root); break;
 	//case Args__Exp_COMMA_Args: args__exp_comma_args(root); break;
 	//case Args__Exp:args__exp(root); break;
@@ -113,14 +113,18 @@ void generateIR(struct Node* root, char* filename) {
 	translate(root);
 }
 
-static void depthTraversal(struct Node* root) {
+static struct InterCode* depthTraversal(struct Node* root) {
 	struct Node* child = root->child;
 	while(child != NULL) {
 		translate(child);
 		child = child->nextSibling;
 	}
+	struct InterCode* tmp;
+	return tmp;
 }
 
-static void exp__int(struct Node* root) {
+static struct InterCode* exp__int(struct Node* root) {
 	//int value = root->child->lexeme;
+	struct InterCode* tmp;
+	return tmp;
 }
