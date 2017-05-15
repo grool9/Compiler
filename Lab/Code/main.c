@@ -27,7 +27,10 @@ int main(int argc, char** argv) {
 	if(!isWrong)semanticAnalysis(root);
 
 	// lab3
-	if(!isWrong)printf("hello lab3\n");
+	if(!isWrong) {
+		printf("hello lab3\n");
+		getIR(argv[2]);
+	}
 
 	return 0;
 } 

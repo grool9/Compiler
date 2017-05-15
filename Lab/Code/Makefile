@@ -34,7 +34,40 @@ syntax-c: $(YFILE)
 # 定义的一些伪目标
 .PHONY: clean test
 test:
-	./parser ../Test/test1.cmm
+	./parser ../Test/test1.cmm ../Test/out.ir
+testa:
+	./parser ../Test/a1.c ../Test/a1_out.ir
+	./parser ../Test/a2.c ../Test/a2_out.ir
+	./parser ../Test/a3.c ../Test/a3_out.ir
+	./parser ../Test/a4.c ../Test/a4_out.ir
+	./parser ../Test/a5.c ../Test/a5_out.ir
+	./parser ../Test/a6.c ../Test/a6_out.ir
+	./parser ../Test/a7.c ../Test/a7_out.ir
+	./parser ../Test/a8.c ../Test/a8_out.ir
+	./parser ../Test/a9.c ../Test/a9_out.ir
+	./parser ../Test/a10.c ../Test/a10_out.ir
+	./parser ../Test/a11.c ../Test/a11_out.ir
+	./parser ../Test/a12.c ../Test/a12_out.ir
+	./parser ../Test/a13.c ../Test/a13_out.ir
+	./parser ../Test/a14.c ../Test/a14_out.ir
+	./parser ../Test/a15.c ../Test/a15_out.ir
+	./parser ../Test/a16.c ../Test/a16_out.ir
+	./parser ../Test/a17.c ../Test/a17_out.ir
+	./parser ../Test/a18.c ../Test/a18_out.ir
+	./parser ../Test/a19.c ../Test/a19_out.ir
+	./parser ../Test/a20.c ../Test/a20_out.ir
+testb:
+	./parser ../Test/b1.c ../Test/b1_out.ir
+	./parser ../Test/b2.c ../Test/b2_out.ir
+testc:
+	./parser ../Test/c1.c ../Test/c1_out.ir
+	./parser ../Test/c2.c ../Test/c2_out.ir
+testd:
+	./parser ../Test/d1.c ../Test/d1_out.ir
+	./parser ../Test/d2.c ../Test/d2_out.ir
+	./parser ../Test/d3.c ../Test/d3_out.ir	
+teste:
+	./parser ../Test/e3.c ../Test/e3_out.ir
 clean:
 	rm -f parser lex.yy.c syntax.tab.c syntax.tab.h syntax.output
 	rm -f $(OBJS) $(OBJS:.o=.d)
