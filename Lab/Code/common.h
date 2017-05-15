@@ -12,6 +12,8 @@ typedef enum { false, true } bool;
 #include "tree.h"
 #include "symbol_table.h"
 #include "semantic.h"
+#include "ir.h"
+#include "translate2IR.h"
 
 int isWrong;
 

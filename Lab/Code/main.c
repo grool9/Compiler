@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
 	// lab3
 	if(!isWrong) {
 		printf("hello lab3\n");
-		getIR(argv[2]);
+		generateIR(root, argv[2]);
 	}
 
 	return 0;

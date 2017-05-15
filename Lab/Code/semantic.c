@@ -1,58 +1,56 @@
 #include "common.h"
 
-//#define DEBUG
-
 int top = -1;
 int count = 1;
 
-void depthTraversal(struct Node* );
+static void depthTraversal(struct Node* );
 bool isTypeEquals(Type t1, Type t2);
 
-void extdef__specifier_extdeclist_semi(struct Node*);
-void extdef__specifier_fundec_compst(struct Node*);
-void extdef__specifier_semi(struct Node*);
-void extdeclist__vardec(struct Node*);
-void extdeclist__vardec_comma_extdeclist(struct Node*);
-void specifier__type(struct Node*);
-void specifier__structspecifier(struct Node*);
-void structspecifier__struct_opttag_lc_deflist_rc(struct Node*);
-void structspecifier__struct_tag(struct Node*);
-void opttag__id(struct Node*);
-void tag__id(struct Node*);
-void vardec__id(struct Node*);
-void vardec__vardec_lb_int_rb(struct Node*);
-void fundec__id_lp_varlist_rp(struct Node*);
-void fundec__id_lp_rp(struct Node*);
-void varlist__paramdec_comma_varlist(struct Node*);
-void varlist__paramdec(struct Node*);
-void paramdec__specifier_vardec(struct Node*);
-void compst__lc_deflist_stmtlist_rc(struct Node*);
-void stmtlist__stmt_stmtlist(struct Node*);
-void stmt__exp_semi(struct Node*);
-void stmt__compst(struct Node*);
-void stmt__return_exp_semi(struct Node*);
-void stmt__ifwhile(struct Node*);
-void deflist__def_deflist(struct Node*);
-void def__specifier_declist_semi(struct Node*);
-void declist__dec(struct Node*);
-void declist__dec_comma_declist(struct Node*);
-void dec__vardec(struct Node*);
-void dec__vardec_assignop_exp(struct Node*);
-void exp__exp_assignop_exp(struct Node*);
-void exp__exp_logicalop_exp(struct Node*);
-void exp__exp_relationop_exp(struct Node*);
-void exp__exp_arithop_exp(struct Node*);
-void exp__lp_exp_rp(struct Node*);
-void exp__minus_exp(struct Node*);
-void exp__not_exp(struct Node*);
-void exp__id_lp_args_rp(struct Node*);
-void exp__exp_lb_exp_rb(struct Node*);
-void exp__exp_dot_id(struct Node*);
-void exp__id(struct Node*);
-void exp__int(struct Node*);
-void exp__float(struct Node*);
-void args__exp_comma_args(struct Node*);
-void args__exp(struct Node*);
+static void extdef__specifier_extdeclist_semi(struct Node*);
+static void extdef__specifier_fundec_compst(struct Node*);
+static void extdef__specifier_semi(struct Node*);
+static void extdeclist__vardec(struct Node*);
+static void extdeclist__vardec_comma_extdeclist(struct Node*);
+static void specifier__type(struct Node*);
+static void specifier__structspecifier(struct Node*);
+static void structspecifier__struct_opttag_lc_deflist_rc(struct Node*);
+static void structspecifier__struct_tag(struct Node*);
+static void opttag__id(struct Node*);
+static void tag__id(struct Node*);
+static void vardec__id(struct Node*);
+static void vardec__vardec_lb_int_rb(struct Node*);
+static void fundec__id_lp_varlist_rp(struct Node*);
+static void fundec__id_lp_rp(struct Node*);
+static void varlist__paramdec_comma_varlist(struct Node*);
+static void varlist__paramdec(struct Node*);
+static void paramdec__specifier_vardec(struct Node*);
+static void compst__lc_deflist_stmtlist_rc(struct Node*);
+static void stmtlist__stmt_stmtlist(struct Node*);
+static void stmt__exp_semi(struct Node*);
+static void stmt__compst(struct Node*);
+static void stmt__return_exp_semi(struct Node*);
+static void stmt__ifwhile(struct Node*);
+static void deflist__def_deflist(struct Node*);
+static void def__specifier_declist_semi(struct Node*);
+static void declist__dec(struct Node*);
+static void declist__dec_comma_declist(struct Node*);
+static void dec__vardec(struct Node*);
+static void dec__vardec_assignop_exp(struct Node*);
+static void exp__exp_assignop_exp(struct Node*);
+static void exp__exp_logicalop_exp(struct Node*);
+static void exp__exp_relationop_exp(struct Node*);
+static void exp__exp_arithop_exp(struct Node*);
+static void exp__lp_exp_rp(struct Node*);
+static void exp__minus_exp(struct Node*);
+static void exp__not_exp(struct Node*);
+static void exp__id_lp_args_rp(struct Node*);
+static void exp__exp_lb_exp_rb(struct Node*);
+static void exp__exp_dot_id(struct Node*);
+static void exp__id(struct Node*);
+static void exp__int(struct Node*);
+static void exp__float(struct Node*);
+static void args__exp_comma_args(struct Node*);
+static void args__exp(struct Node*);
 
 // 遍历语法树
 void semanticAnalysis(struct Node* root){
@@ -138,7 +136,7 @@ char* my_itoa(int count) {
 }
 
 //从左到右深度遍历
-void depthTraversal(struct Node* root) {
+static void depthTraversal(struct Node* root) {
 	struct Node* child = root->child;
 	while(child!=NULL) {
 		semanticAnalysis(child);
@@ -178,7 +176,7 @@ bool isTypeEquals(Type t1, Type t2) {
 	return false;
 }
 
-void extdef__specifier_extdeclist_semi(struct Node* root) {
+static void extdef__specifier_extdeclist_semi(struct Node* root) {
 	struct Node* specifier = root->child;
 	struct Node* extdeclist = specifier->nextSibling;
 
@@ -188,7 +186,7 @@ void extdef__specifier_extdeclist_semi(struct Node* root) {
 	semanticAnalysis(extdeclist);
 }
 
-void extdef__specifier_fundec_compst(struct Node* root) {
+static void extdef__specifier_fundec_compst(struct Node* root) {
 	struct Node* specifier = root->child;
 	struct Node* fundec = specifier->nextSibling;
 	struct Node* compst = fundec->nextSibling;
@@ -202,19 +200,19 @@ void extdef__specifier_fundec_compst(struct Node* root) {
 	semanticAnalysis(compst);
 }
 
-void extdef__specifier_semi(struct Node* root) {
+static void extdef__specifier_semi(struct Node* root) {
 	struct Node* specifier = root->child;
 	semanticAnalysis(specifier);
 }
 
-void extdeclist__vardec(struct Node* root) {
+static void extdeclist__vardec(struct Node* root) {
 	struct Node* vardec = root->child;
 	
 	vardec->type = root->type;
 	semanticAnalysis(vardec);
 }
 
-void extdeclist__vardec_comma_extdeclist(struct Node* root) {
+static void extdeclist__vardec_comma_extdeclist(struct Node* root) {
 	struct Node* vardec = root->child;
 	struct Node* extdeclist = vardec->nextSibling->nextSibling;
 
@@ -225,7 +223,7 @@ void extdeclist__vardec_comma_extdeclist(struct Node* root) {
 	semanticAnalysis(extdeclist);
 }
 
-void specifier__type(struct Node* root) {
+static void specifier__type(struct Node* root) {
 	struct Node* nodetype = root->child;
 	char* text = nodetype->lexeme;
 
@@ -245,7 +243,7 @@ void specifier__type(struct Node* root) {
 	}
 }
 
-void specifier__structspecifier(struct Node* root) {
+static void specifier__structspecifier(struct Node* root) {
 	struct Node* structspecifier = root->child;
 
 	semanticAnalysis(structspecifier);
@@ -253,7 +251,7 @@ void specifier__structspecifier(struct Node* root) {
 	root->type = structspecifier->type;
 }
 
-void structspecifier__struct_opttag_lc_deflist_rc(struct Node* root) {
+static void structspecifier__struct_opttag_lc_deflist_rc(struct Node* root) {
 	// initial
 	top++;
 
@@ -291,7 +289,6 @@ void structspecifier__struct_opttag_lc_deflist_rc(struct Node* root) {
 		struct Symbol* p = lookupVariable(name);
 		if(p != NULL) {
 			printf("Error type 16 at Line %d: Duplicated name \"%s\".\n", root->lineno, name);
-			isWrong = 1;
 		}
 		else addElement(root);
 	}
@@ -300,7 +297,7 @@ void structspecifier__struct_opttag_lc_deflist_rc(struct Node* root) {
 	top--;
 }
 
-void structspecifier__struct_tag(struct Node* root) {
+static void structspecifier__struct_tag(struct Node* root) {
 	struct Node* tag = root->child->nextSibling;
 
 	semanticAnalysis(tag);
@@ -310,25 +307,24 @@ void structspecifier__struct_tag(struct Node* root) {
 
 	if(sym == NULL || sym->idkind != _TYPE_) {
 		printf("Error type 17 at Line %d: Undefined structure \"%s\".\n", root->lineno, name);
-		isWrong = 1;
 		return;
 	}
 
 	root->type = sym->type;
 }
 
-void opttag__id(struct Node* root) {
+static void opttag__id(struct Node* root) {
 	struct Node* id = root->child;
 
 	root->lexeme = id->lexeme;
 }
 
-void tag__id(struct Node* root) {
+static void tag__id(struct Node* root) {
 	struct Node* id = root->child;
 	root->lexeme = id->lexeme;
 }
 
-void vardec__id(struct Node* root) {
+static void vardec__id(struct Node* root) {
 	struct Node* id = root->child;	
 
 	id->idkind = _VARIABLE_;
@@ -357,9 +353,6 @@ void vardec__id(struct Node* root) {
 	struct Symbol* sym = lookupVariable(name);
 	if(sym == NULL) {
 		if(top != -1){
-#ifdef DEBUG
-			printf("%s..\n", structinfo[top].structName);
-#endif
 			addField(id, structinfo[top].structName);
 		}
 		else addElement(id);
@@ -367,25 +360,17 @@ void vardec__id(struct Node* root) {
 	else{
 		if(top != -1 && strcmp(sym->addr, structinfo[top].structName)==0) 
 		{
-#ifdef DEBUG
-			printf("sym->addr: %s \t structinfo[top].structName: %s\n", sym->addr, structinfo[top].structName);
-#endif
 			printf("Error type 15 at Line %d: Redefined field \"%s\".\n", root->lineno, name);
-			isWrong = 1;
 		}
 		else {
-#ifdef DEBUG
-			printf("sym->addr: %s \t structinfo[top].structName: %s\n", sym->addr, structinfo[top].structName);
-#endif
 			printf("Error type 3 at Line %d: Redefined variable \"%s\"\n",root->lineno, name);
-			isWrong = 1;
 		}
 	}
 
 	root->lexeme = name;
 }
 
-void vardec__vardec_lb_int_rb(struct Node* root) {
+static void vardec__vardec_lb_int_rb(struct Node* root) {
 	struct Node* vardec = root->child;
 	int size = my_atoi(vardec->nextSibling->nextSibling->lexeme);
 
@@ -400,7 +385,7 @@ void vardec__vardec_lb_int_rb(struct Node* root) {
 	root->type = vardec->type;
 }
 
-void fundec__id_lp_varlist_rp(struct Node* root) {
+static void fundec__id_lp_varlist_rp(struct Node* root) {
 	struct Node* id = root->child;
 	struct Node* varlist = id->nextSibling->nextSibling;
 
@@ -420,14 +405,13 @@ void fundec__id_lp_varlist_rp(struct Node* root) {
 	struct Symbol* p = lookupFunction(name);
 	if(p != NULL && p->idkind == _FUNCTION_){
 		printf("Error type 4 at Line %d: Redefined function \"%s\"\n", root->lineno, name);
-		isWrong = 1;
 	}
 	else addElement(id);
 
 	root->lexeme = name;
 }
 
-void fundec__id_lp_rp(struct Node* root) {
+static void fundec__id_lp_rp(struct Node* root) {
 	struct Node* id = root->child;
 
 	id->retType = root->retType;
@@ -438,14 +422,13 @@ void fundec__id_lp_rp(struct Node* root) {
 	struct Symbol* p = lookupFunction(name);
 	if(p != NULL && p->idkind == _FUNCTION_){
 		printf("Error type 4 at Line %d: Redefined function \"%s\"\n", root->lineno, name);
-		isWrong = 1;
 	}
 	else addElement(id);
 
 	root->lexeme = name;
 }
 
-void varlist__paramdec_comma_varlist(struct Node* root) {
+static void varlist__paramdec_comma_varlist(struct Node* root) {
 	struct Node* paramdec = root->child;
 	struct Node* varlist = paramdec->nextSibling->nextSibling;
 
@@ -460,7 +443,7 @@ void varlist__paramdec_comma_varlist(struct Node* root) {
 	root->argc = varlist->argc;//syn
 }
 
-void varlist__paramdec(struct Node* root) {
+static void varlist__paramdec(struct Node* root) {
 	struct Node* paramdec = root->child;
 
 	paramdec->argc = root->argc;
@@ -470,7 +453,7 @@ void varlist__paramdec(struct Node* root) {
 	root->argc = paramdec->argc;
 }
 
-void paramdec__specifier_vardec(struct Node* root) {
+static void paramdec__specifier_vardec(struct Node* root) {
 	struct Node* specifier = root->child;
 	struct Node* vardec = specifier->nextSibling;
 
@@ -483,7 +466,7 @@ void paramdec__specifier_vardec(struct Node* root) {
 	root->argc++;
 }
 
-void compst__lc_deflist_stmtlist_rc(struct Node* root) {
+static void compst__lc_deflist_stmtlist_rc(struct Node* root) {
 	//注意deflist和stmtlist可以为空
 	struct Node* p = root->child;
 	for(;p!=NULL;p = p->nextSibling) {
@@ -492,7 +475,7 @@ void compst__lc_deflist_stmtlist_rc(struct Node* root) {
 	}
 }
 
-void stmtlist__stmt_stmtlist(struct Node* root) {
+static void stmtlist__stmt_stmtlist(struct Node* root) {
 	struct Node* stmt = root->child;
 	struct Node* stmtlist = stmt->nextSibling;
 
@@ -505,13 +488,13 @@ void stmtlist__stmt_stmtlist(struct Node* root) {
 	}
 }
 
-void stmt__compst(struct Node* root) {
+static void stmt__compst(struct Node* root) {
 	struct Node* compst = root->child;
 	compst->retType = root->retType;
 	semanticAnalysis(compst);
 }
 
-void stmt__return_exp_semi(struct Node* root) {
+static void stmt__return_exp_semi(struct Node* root) {
 	struct Node* exp = root->child->nextSibling;
 
 	semanticAnalysis(exp);
@@ -519,11 +502,10 @@ void stmt__return_exp_semi(struct Node* root) {
 	//check type
 	if(!isTypeEquals(root->retType, exp->type)) {
 		printf("Error type 8 at Line %d: Type mismatched for return.\n", root->lineno);
-		isWrong = 1;
 	}
 }
 
-void stmt__ifwhile(struct Node* root) {
+static void stmt__ifwhile(struct Node* root) {
 	struct Node* exp = root->child->nextSibling->nextSibling;
 
 	semanticAnalysis(exp);
@@ -531,7 +513,6 @@ void stmt__ifwhile(struct Node* root) {
 	//check type
 	if(exp->type->kind != _BASIC_ || exp->type->u.basic != _INT_) { 
 		printf("Error type 7 at Line %d: The condition of statement has a wrong type.\n", exp->lineno);
-		isWrong = 1;
 	}
 
 	struct Node* p = exp->nextSibling;
@@ -542,7 +523,7 @@ void stmt__ifwhile(struct Node* root) {
 	}
 }
 
-void deflist__def_deflist(struct Node* root) {
+static void deflist__def_deflist(struct Node* root) {
 	struct Node* def = root->child;
 	struct Node* deflist = def->nextSibling;
 
@@ -553,7 +534,7 @@ void deflist__def_deflist(struct Node* root) {
 	}
 }
 
-void def__specifier_declist_semi(struct Node* root) {
+static void def__specifier_declist_semi(struct Node* root) {
 	struct Node* specifier = root->child;
 	struct Node* declist = specifier->nextSibling;
 
@@ -563,14 +544,14 @@ void def__specifier_declist_semi(struct Node* root) {
 	semanticAnalysis(declist);
 }
 
-void declist__dec(struct Node* root) {
+static void declist__dec(struct Node* root) {
 	struct Node* dec = root->child;
 	dec->type = root->type;
 
 	semanticAnalysis(dec);
 }
 
-void declist__dec_comma_declist(struct Node* root) {
+static void declist__dec_comma_declist(struct Node* root) {
 	struct Node* dec = root->child;
 	struct Node* declist = dec->nextSibling->nextSibling;
 
@@ -581,14 +562,14 @@ void declist__dec_comma_declist(struct Node* root) {
 	semanticAnalysis(declist);
 }
 
-void dec__vardec(struct Node* root) {
+static void dec__vardec(struct Node* root) {
 	struct Node* vardec = root->child;
 	
 	vardec->type = root->type;
 	semanticAnalysis(vardec);
 }
 
-void dec__vardec_assignop_exp(struct Node* root) {
+static void dec__vardec_assignop_exp(struct Node* root) {
 	struct Node* vardec = root->child;
 	struct Node* exp = vardec->nextSibling->nextSibling;
 
@@ -598,22 +579,19 @@ void dec__vardec_assignop_exp(struct Node* root) {
 	// check error type 15
 	if(top != -1) {
 		printf("Error type 15 at Line %d: The field is initialized\n", root->lineno);
-		isWrong = 1;
 		return;
 	}
 	
-
 	semanticAnalysis(exp);
 
 	//check type
 	//等号两边类型匹配
 	if(!isTypeEquals(vardec->type, exp->type)) {
          printf("Error type 5 at Line %d: Type mismatched for assignment.\n",root->lineno);
-	 isWrong = 1;
      }
 }
 
-void exp__exp_assignop_exp(struct Node* root) {
+static void exp__exp_assignop_exp(struct Node* root) {
 	struct Node* exp1 = root->child;
 	struct Node* exp2 = exp1->nextSibling->nextSibling;
 	
@@ -623,19 +601,17 @@ void exp__exp_assignop_exp(struct Node* root) {
 	//等号左边为右值
 	if(!exp1->isLeftVal) {
 		printf("Error type 6 at Line %d: The left-hand side of an assignment must be a variable.\n", root->lineno);
-		isWrong = 1;
 	}
 
 	//等号两边类型匹配
 	if(!isTypeEquals(exp1->type, exp2->type)) {
 		printf("Error type 5 at Line %d: Type mismatched for assignment.\n", root->lineno);
-		isWrong = 1;
 	}
 
 	root->type = exp1->type;
 }
 
-void exp__exp_logicalop_exp(struct Node* root) {
+static void exp__exp_logicalop_exp(struct Node* root) {
 	struct Node* exp1 = root->child;
 	struct Node* exp2 = exp1->nextSibling->nextSibling;
 
@@ -645,11 +621,9 @@ void exp__exp_logicalop_exp(struct Node* root) {
 	// int
 	if(exp1->type->kind != _BASIC_ || exp1->type->u.basic != _INT_) {
 		printf("Error type 7 at Line %d: operand \"%s\" of logical operation must be integer.\n", root->lineno, exp1->lexeme);
-		isWrong = 1;
 	}
 	if(exp2->type->kind != _BASIC_ || exp2->type->u.basic != _INT_) {
         printf("Error type 7 at Line %d: operand \"%s\" of logical operation must be integer.\n", root->lineno, exp2->lexeme);
-	isWrong = 1;
      }
 
 	// 结果为int类型
@@ -658,7 +632,7 @@ void exp__exp_logicalop_exp(struct Node* root) {
 	root->type->u.basic = _INT_;
 }
 
-void exp__exp_relationop_exp(struct Node* root) {
+static void exp__exp_relationop_exp(struct Node* root) {
 	struct Node* exp1 = root->child;
 	struct Node* exp2 = exp1->nextSibling->nextSibling;
 
@@ -668,11 +642,9 @@ void exp__exp_relationop_exp(struct Node* root) {
 	// 类型不匹配
 	if(!isTypeEquals(exp1->type, exp2->type)) {
 		printf("Error type 7 at Line %d: Type mismatched for operands.\n", root->lineno);
-		isWrong = 1;
 	}
 	else if(exp1->type->kind != _BASIC_) {
 		printf("Error type 7 at Line %d: operands of relational operation must be integer or float.\n",root->lineno);
-		isWrong = 1;
      }
 	
 	// 结果为int类型
@@ -681,7 +653,7 @@ void exp__exp_relationop_exp(struct Node* root) {
 	root->type->u.basic = _INT_;
 }
 
-void exp__exp_arithop_exp(struct Node* root) {
+static void exp__exp_arithop_exp(struct Node* root) {
 	struct Node* exp1 = root->child;
 	struct Node* exp2 = exp1->nextSibling->nextSibling;
 
@@ -691,7 +663,6 @@ void exp__exp_arithop_exp(struct Node* root) {
 	// 类型不匹配
 	if(!isTypeEquals(exp1->type, exp2->type)) {
 		printf("Error type 7 at Line %d: Type mismatched for operands.\n", root->lineno);
-		isWrong = 1;
 		
 		// 类型上升
 		if(exp1->type->kind == _BASIC_ && exp2->type->kind == _BASIC_) {
@@ -705,43 +676,40 @@ void exp__exp_arithop_exp(struct Node* root) {
 	}
 	else if(exp1->type->kind != _BASIC_) {
 		printf("Error type 7 at Line %d: operands of arithmetic operation must be integer or float.\n",root->lineno);
-		isWrong = 1;
      }
 	else root->type = exp1->type;
 }
 
-void exp__lp_exp_rp(struct Node* root) {
+static void exp__lp_exp_rp(struct Node* root) {
 	struct Node* exp1 = root->child->nextSibling;
 	semanticAnalysis(exp1);
 
 	root->type = exp1->type;
 }
 
-void exp__minus_exp(struct Node* root) {
+static void exp__minus_exp(struct Node* root) {
 	struct Node* exp1 = root->child->nextSibling;
 	semanticAnalysis(exp1);
 
 	if(exp1->type->kind != _BASIC_) {
 		printf("Error type 7 at Line %d: operand \"%s\" of arithmetic operation must be integer or float.\n",root->lineno, exp1->lexeme);
-		isWrong = 1;
      }
 
 	root->type = exp1->type;
 }
 
-void exp__not_exp(struct Node* root) {
+static void exp__not_exp(struct Node* root) {
 	struct Node* exp1 = root->child->nextSibling;
 	semanticAnalysis(exp1);
 
 	if(exp1->type->kind != _BASIC_ || exp1->type->u.basic != _INT_) {
 		printf("Error type 7 at Line %d: operand \"%s\" of logical operation must be integer.\n",root->lineno, exp1->lexeme);
-		isWrong = 1;
 	}
 
 	root->type = exp1->type;
 }
 
-void exp__id_lp_args_rp(struct Node* root) {
+static void exp__id_lp_args_rp(struct Node* root) {
 	struct Node* id = root->child;
 	struct Node* args = id->nextSibling->nextSibling;
 
@@ -756,14 +724,12 @@ void exp__id_lp_args_rp(struct Node* root) {
 	// 方程未定义
 	if(p == NULL) {
 		printf("Error type 2 at Line %d: Undefined function \"%s\"\n", root->lineno, name);
-		isWrong = 1;
 		return;
 	}
 
 	//不是方程
 	else if(p->idkind != _FUNCTION_) {
 		printf("Error type 11 at Line %d: \"%s\" is not a fuction.\n", root->lineno, name);
-		isWrong = 1;
 		return;
 	}
 
@@ -787,14 +753,13 @@ void exp__id_lp_args_rp(struct Node* root) {
 	}
 	if(!flag) {
 		printf("Error type 9 at Line %d: Function \"%s\" is not applicable for arguments.\n", root->lineno, name);
-		isWrong = 1;
 	}
 
 	// 综合属性
 	root->retType = p->retType;
 }
 
-void args__exp_comma_args(struct Node* root) {
+static void args__exp_comma_args(struct Node* root) {
 	struct Node* exp = root->child;
 	struct Node* args = exp->nextSibling->nextSibling;
 
@@ -813,7 +778,7 @@ void args__exp_comma_args(struct Node* root) {
 	root->argc = args->argc;
 }
 
-void args__exp(struct Node* root) {
+static void args__exp(struct Node* root) {
 	struct Node* exp = root->child;
 
 	int argc = root->argc;
@@ -827,7 +792,7 @@ void args__exp(struct Node* root) {
 	root->argc = argc;
 }
 
-void exp__exp_lb_exp_rb(struct Node* root) {
+static void exp__exp_lb_exp_rb(struct Node* root) {
 	struct Node* exp1 = root->child;
 	struct Node* exp2 = exp1->nextSibling->nextSibling;
 
@@ -837,14 +802,12 @@ void exp__exp_lb_exp_rb(struct Node* root) {
 	// check type
 	if(exp1->type->kind != _ARRAY_) {
 		printf("Error type 10 at Line %d: \"%s\" is not an array.\n", root->lineno, exp1->lexeme);
-		isWrong = 1;
 	}
 	else root->type = exp1->type->u.array.elem;
 
 	// [?]
 	if(exp2->type->kind != _BASIC_ || exp2->type->u.basic != _INT_) {
 		printf("Error type 12 at Line %d: \"%s\" is not an integer.\n", root->lineno, exp2->lexeme);
-		isWrong = 1;
 	}
 
 	root->lexeme = (char*)malloc(LEN);
@@ -853,7 +816,7 @@ void exp__exp_lb_exp_rb(struct Node* root) {
 	root->isLeftVal = true;
 }
 
-void exp__exp_dot_id(struct Node* root) {
+static void exp__exp_dot_id(struct Node* root) {
 	struct Node* exp1 = root->child;
 	struct Node* id = exp1->nextSibling->nextSibling;
 
@@ -868,7 +831,6 @@ void exp__exp_dot_id(struct Node* root) {
 	// check type
 	if(exp1->type->kind != _STRUCTURE_) {
 		printf("Error type 13 at Line %d: Illegal use of \".\"\n", root->lineno);
-		isWrong = 1;
 		return;// 不继续检查域了
 	}
 
@@ -881,13 +843,12 @@ void exp__exp_dot_id(struct Node* root) {
 	// 结构体中没有这个域
 	if(p == NULL) {
 		printf("Error type 14 at Line %d: Non-existent field \"%s\".\n", root->lineno, id->lexeme);
-		isWrong = 1;
 		//printType(root->type);
 	} 
 	else root->type = p->type;
 }
 
-void exp__id(struct Node* root) {
+static void exp__id(struct Node* root) {
 	struct Node* id = root->child;
 	
 	char* name = id->lexeme;
@@ -898,14 +859,13 @@ void exp__id(struct Node* root) {
 	struct Symbol* p = lookupVariable(name);
 	if(p == NULL || p->idkind != _VARIABLE_) {
 		printf("Error type 1 at Line %d: Undefined variable \"%s\"\n", root->lineno, name);
-		isWrong = 1;
 		return;
 	}
 
 	root->type = p->type;
 }
 
-void exp__int(struct Node* root) {
+static void exp__int(struct Node* root) {
 	root->lexeme = root->child->lexeme;
 
 	root->type = (Type)malloc(sizeof(struct Type_));
@@ -914,7 +874,7 @@ void exp__int(struct Node* root) {
 
 }
 
-void exp__float(struct Node* root) {
+static void exp__float(struct Node* root) {
 	root->lexeme = root->child->lexeme;
 	
 	root->type = (Type)malloc(sizeof(struct Type_));
