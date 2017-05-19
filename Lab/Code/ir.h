@@ -3,16 +3,19 @@
 
 #include "tree.h"
 
-typedef enum { VARIABLE, CONSTANT, ADDRESS} OperandKind;
+typedef enum { VARIABLE, CONSTANT, ADDRESS, TEMP, LABEL} OperandKind;
 typedef enum { ASSIGN, ADD, SUB, MUL, DIVIDE } OperationKind;
+
+typedef union {
+	char* varName;
+	int var_no;
+	int value;
+}OperandVal;
 
 typedef struct Operand_* Operand;
 struct Operand_ {
 	OperandKind kind;
-	union {
-		int var_no;
-		int value;
-	}u;
+	OperandVal u;
 };
 
 struct InterCode {
