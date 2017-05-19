@@ -29,7 +29,7 @@ typedef enum{
 	Stmt__Compst, 
 	Stmt__RETURN_Exp_SEMI, 
 	Stmt__IF_LP_Exp_RP_Stmt, 
-	Stmt__IF_LP_Exp_RP_Stmt_else_Stmt, 
+	Stmt__IF_LP_Exp_RP_Stmt_ELSE_Stmt, 
 	Stmt__WHILE_LP_Exp_RP_Stmt, 
 	DefList__Def_DefList, 
 	Def__Specifier_DecList_SEMI, 

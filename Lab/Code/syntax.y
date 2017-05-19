@@ -75,7 +75,7 @@ Stmt			:	Exp SEMI					{$$=insert(Stmt__Exp_SEMI,"Stmt",2,$1,$2);}
 				|	CompSt						{$$=insert(Stmt__Compst,"Stmt",1,$1);}
 				|	RETURN Exp SEMI				{$$=insert(Stmt__RETURN_Exp_SEMI,"Stmt",3,$1,$2,$3);}
 				|	IF LP Exp RP Stmt	%prec LOWER_THAN_ELSE	{$$=insert(Stmt__IF_LP_Exp_RP_Stmt,"Stmt",5,$1,$2,$3,$4,$5);}
-				|	IF LP Exp RP Stmt ELSE Stmt	{$$=insert(Stmt__IF_LP_Exp_RP_Stmt_else_Stmt,"Stmt",7,$1,$2,$3,$4,$5,$6,$7);}
+				|	IF LP Exp RP Stmt ELSE Stmt	{$$=insert(Stmt__IF_LP_Exp_RP_Stmt_ELSE_Stmt,"Stmt",7,$1,$2,$3,$4,$5,$6,$7);}
 				|	WHILE LP Exp RP Stmt		{$$=insert(Stmt__WHILE_LP_Exp_RP_Stmt,"Stmt",5,$1,$2,$3,$4,$5);}
 				|	error SEMI					{yyerrok;}
 				|	error						{}

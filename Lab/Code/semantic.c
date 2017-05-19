@@ -81,7 +81,7 @@ void semanticAnalysis(struct Node* root){
 	case Stmt__Compst: stmt__compst(root); break;
 	case Stmt__RETURN_Exp_SEMI: stmt__return_exp_semi(root); break; 
 	case Stmt__IF_LP_Exp_RP_Stmt: stmt__ifwhile(root); break; 
-	case Stmt__IF_LP_Exp_RP_Stmt_else_Stmt:stmt__ifwhile(root); break;
+	case Stmt__IF_LP_Exp_RP_Stmt_ELSE_Stmt:stmt__ifwhile(root); break;
 	case Stmt__WHILE_LP_Exp_RP_Stmt:stmt__ifwhile(root); break;
 	case DefList__Def_DefList: deflist__def_deflist(root); break;
 	case Def__Specifier_DecList_SEMI:def__specifier_declist_semi(root); break;
