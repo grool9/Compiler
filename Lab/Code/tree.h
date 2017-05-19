@@ -103,6 +103,7 @@ struct Node{
 			Type* argv;
 		};
 	};
+
 };
 
 // none type
@@ -112,7 +113,7 @@ Type none_type;
 extern struct Node* root;
 
 // lab1
-int my_atoi(char* );
+int my_atoi(char* );//atoi
 struct Node* insert(Rule rule, char* type, int argc, ...);
 void outputTree(struct Node*, int n);
 

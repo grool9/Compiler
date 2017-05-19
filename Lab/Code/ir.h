@@ -3,9 +3,12 @@
 
 #include "tree.h"
 
+typedef enum { VARIABLE, CONSTANT, ADDRESS} OperandKind;
+typedef enum { ASSIGN, ADD, SUB, MUL, DIVIDE } OperationKind;
+
 typedef struct Operand_* Operand;
 struct Operand_ {
-	enum { VARIABLE, CONSTANT, ADDRESS} kind;
+	OperandKind kind;
 	union {
 		int var_no;
 		int value;
@@ -13,20 +16,22 @@ struct Operand_ {
 };
 
 struct InterCode {
-	enum { ASSIGN, ADD, SUB, MUL, DIVIDE } kind;
+	OperationKind kind;
 	union {
-		struct {Operand right, left; }assign;
+		struct {Operand left, right; }assign;
 		struct {Operand result, op1, op2; }binop;
 	}u;
 };
 
-struct InterCodes {
+struct InterCodeNode {
 	struct InterCode code;
-	struct InterCodes* prev, *next;
+	struct InterCodeNode* prev, *next;
 };
 
-extern struct InterCodes* icHead;
+extern struct InterCodeNode* icHead;
 
-void printInterCodes(); 
+void printInterCodes();
+
+struct InterCodeNode* newInterCodeNode(); 
 
 #endif

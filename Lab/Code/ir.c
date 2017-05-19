@@ -1,6 +1,6 @@
 #include "common.h"
 
-struct InterCodes* icHead = NULL;
+struct InterCodeNode* icHead = NULL;
 
 void printOp(Operand op) {
 	int kind = op->kind;
@@ -11,7 +11,7 @@ void printOp(Operand op) {
 }
 
 void printInterCodes() {
-	struct InterCodes* cur = icHead;
+	struct InterCodeNode* cur = icHead;
 	while(cur != NULL) {
 		// kind
 		int kind = cur->code.kind;
