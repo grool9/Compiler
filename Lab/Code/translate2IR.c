@@ -1,6 +1,6 @@
 #include "common.h"
 
-#define DEBUG
+//#define DEBUG
 
 // declaration
 struct InterCodeNode* translate_ExtDefList(struct Node* root);
@@ -52,7 +52,7 @@ struct InterCodeNode* newInterCodeNode(OperationKind kind, Operand op1, Operand 
 		node->code.u.binop.op1 = op2;
 		node->code.u.binop.op2 = op3;
 	}
-	else if(kind == LABELOP || kind == GOTO || kind == RETURNOP || kind == READ || kind == ARG || kind == PARAM) {
+	else if(kind == LABELOP || kind == GOTO || kind == RETURNOP || kind == READ || kind == WRITE || kind == ARG || kind == PARAM) {
 		node->code.u.sigop.op = op1;
 	}
 	else if(kind == IFOP) {
@@ -126,7 +126,13 @@ struct InterCodeNode* concat(int number, ...) {
 struct OperandNode* arg_concat(Operand t, struct OperandNode* arg_list) {
 	struct OperandNode* temp = (struct OperandNode*)malloc(sizeof(struct OperandNode));
 	temp->op = t;
-	temp->next = arg_list;
+
+	// connect
+	struct OperandNode* first = arg_list;
+	struct OperandNode* second = arg_list->next;
+
+	first->next = temp;
+	temp->next = second;
 	return temp;
 }
 
@@ -134,12 +140,21 @@ struct OperandNode* arg_concat(Operand t, struct OperandNode* arg_list) {
  * translate functions
  */
 struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
+	if(root == NULL)return NULL;
+#ifdef DEBUG
+	printf("enter translate_Exp():%s\t%s\n", root->token, root->lexeme);
+#endif
+
 	switch(root->rule) {
 		case Exp__INT:{
 			struct Node* intNode = root->child;
 			int value = my_atoi(intNode->lexeme);
 			Operand right = newOperand(CONSTANT, NULL, value);
-			return newInterCodeNode(ASSIGN, place, right, NULL, NULL);
+			struct InterCodeNode* code = newInterCodeNode(ASSIGN, place, right, NULL, NULL);
+#ifdef DEBUG
+	printInterCodes(code);
+#endif
+			return code;
 		}
 		case Exp__ID:{
 			struct Node* id = root->child;
@@ -177,6 +192,11 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 		}
 		case Exp__MINUS_Exp:{
 			struct Node* exp1 = root->child->nextSibling;
+
+#ifdef DEBUG
+	printf("Exp__MINUS_Exp\n");
+	printf("%s\n", exp1);
+#endif
 
 			Operand t1 = new_temp();
 
@@ -222,8 +242,17 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 			
 			struct InterCodeNode* code1 = translate_Args(args, arg_list);
 
+#ifdef DEBUG
+	printf("Exp__ID_LP_Args_RP\n");
+	printInterCodes(code1);
+#endif
 			Operand first_arg = arg_list->next->op;
 			struct InterCodeNode* c1 = newInterCodeNode(WRITE, first_arg, NULL, NULL, NULL);
+			
+#ifdef DEBUG
+	printInterCodes(c1);
+#endif
+			
 			if(strcmp(function, "write")==0) return concat(2, code1, c1);
 		
 			struct InterCodeNode* code2 = newInterCodeNode(ARG, first_arg, NULL, NULL, NULL);
@@ -239,6 +268,10 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 }
 
 struct InterCodeNode* translate_Stmt(struct Node* root) {
+	if(root == NULL)return NULL;
+#ifdef DEBUG
+	printf("enter translate_Stmt():%s\t%s\n", root->token, root->lexeme);
+#endif
 	switch(root->rule) {
 		case Stmt__Exp_SEMI:{
 			return translate_Exp(root->child, NULL);
@@ -264,6 +297,7 @@ struct InterCodeNode* translate_Stmt(struct Node* root) {
 			struct InterCodeNode* code2 = translate_Stmt(stmt1);
 			struct InterCodeNode* c1 = newInterCodeNode(LABELOP, label1, NULL, NULL, NULL);
 			struct InterCodeNode* c2 = newInterCodeNode(LABELOP, label2, NULL, NULL, NULL);
+
 			return concat(4, code1, c1, code2, c2);
 		}
 		case Stmt__IF_LP_Exp_RP_Stmt_ELSE_Stmt: {
@@ -283,7 +317,13 @@ struct InterCodeNode* translate_Stmt(struct Node* root) {
 			struct InterCodeNode* c2 = newInterCodeNode(GOTO, label3, NULL, NULL, NULL);
 			struct InterCodeNode* c3 = newInterCodeNode(LABELOP, label2, NULL, NULL, NULL);
 			struct InterCodeNode* c4 = newInterCodeNode(LABELOP, label3, NULL, NULL, NULL);
+#ifdef DEBUG
+	printf("IFELSE!\n");
+	printInterCodes(code1);
+#endif
+
 			return concat(7, code1, c1, code2, c2, c3, code3, c4);
+		
 		}
 		case Stmt__WHILE_LP_Exp_RP_Stmt: {
 			struct Node* exp = root->child->nextSibling->nextSibling;
@@ -306,6 +346,10 @@ struct InterCodeNode* translate_Stmt(struct Node* root) {
 }
 
 struct InterCodeNode* translate_Cond(struct Node* root, Operand label_true, Operand label_false) {
+	if(root == NULL)return NULL;
+#ifdef DEBUG
+	printf("enter translate_Cond():%s\t%s\n", root->token, root->lexeme);
+#endif
 	switch(root->rule) {
 		case Exp__Exp_RELOP_Exp:{
 			struct Node* exp1 = root->child;
@@ -356,6 +400,10 @@ struct InterCodeNode* translate_Cond(struct Node* root, Operand label_true, Oper
 }
 
 struct InterCodeNode* translate_Args(struct Node* root, struct OperandNode* arg_list) {
+	if(root == NULL)return NULL;
+#ifdef DEBUG
+	printf("enter translate_Args():%s\t%s\n", root->token, root->lexeme);
+#endif
 	switch(root->rule) {
 		case Args__Exp: {
 			struct Node* exp = root->child;
@@ -364,6 +412,10 @@ struct InterCodeNode* translate_Args(struct Node* root, struct OperandNode* arg_
 			struct InterCodeNode* code1 = translate_Exp(exp, t1);
 
 			arg_list = arg_concat(t1, arg_list);
+#ifdef DEBUG
+	printf("Args__Exp\n");
+	printInterCodes(code1);
+#endif
 			return code1;
 		}
 		case Args__Exp_COMMA_Args: {
@@ -381,6 +433,10 @@ struct InterCodeNode* translate_Args(struct Node* root, struct OperandNode* arg_
 }
 
 struct InterCodeNode* translate_Compst(struct Node* root) {
+	if(root == NULL)return NULL;
+#ifdef DEBUG
+	printf("enter translate_Compst():%s\t%s\n", root->token, root->lexeme);
+#endif
 	struct Node* cur = root->child->nextSibling;
 	
 	struct InterCodeNode* code = NULL;
@@ -398,6 +454,10 @@ struct InterCodeNode* translate_Compst(struct Node* root) {
 }
 
 struct InterCodeNode* translate_DefList(struct Node* root) {
+	if(root == NULL)return NULL;
+#ifdef DEBUG
+	printf("enter translate_DefList():%s\t%s\n", root->token, root->lexeme);
+#endif
 	struct Node* def = root->child;
 	struct Node* deflist = def->nextSibling;
 
@@ -408,6 +468,10 @@ struct InterCodeNode* translate_DefList(struct Node* root) {
 }
 
 struct InterCodeNode* translate_StmtList(struct Node* root) {
+	if(root == NULL)return NULL;
+#ifdef DEBUG
+	printf("enter translate_StmtList():%s\t%s\n", root->token, root->lexeme);
+#endif
 	struct Node* stmt = root->child;
 	struct Node* stmtlist = stmt->nextSibling;
 
@@ -418,6 +482,10 @@ struct InterCodeNode* translate_StmtList(struct Node* root) {
 }
 
 struct InterCodeNode* translate_Def(struct Node* root) {
+	if(root == NULL)return NULL;
+#ifdef DEBUG
+	printf("enter translate_Def():%s\t%s\n", root->token, root->lexeme);
+#endif
 	struct Node* specifier = root->child;
 	struct Node* declist = specifier->nextSibling;
 
@@ -428,6 +496,10 @@ struct InterCodeNode* translate_Def(struct Node* root) {
 }
 
 struct InterCodeNode* translate_DecList(struct Node* root) {
+	if(root == NULL)return NULL;
+#ifdef DEBUG
+	printf("enter translate_DecList():%s\t%s\n", root->token, root->lexeme);
+#endif
 	struct Node* dec = root->child;
 	struct InterCodeNode* code = translate_Dec(dec);
 
@@ -441,6 +513,10 @@ struct InterCodeNode* translate_DecList(struct Node* root) {
 }
 
 struct InterCodeNode* translate_Dec(struct Node* root) {
+	if(root == NULL)return NULL;
+#ifdef DEBUG
+	printf("enter translate_Dec():%s\t%s\n", root->token, root->lexeme);
+#endif
 	struct Node* vardec = root->child;
 	struct InterCodeNode* code = translate_VarDec(vardec);
 
@@ -456,6 +532,10 @@ struct InterCodeNode* translate_Dec(struct Node* root) {
 }
 
 struct InterCodeNode* translate_VarDec(struct Node* root) {
+	if(root == NULL)return NULL;
+#ifdef DEBUG
+	printf("enter translate_VarDec():%s\t%s\n", root->token, root->lexeme);
+#endif
 	if(root->rule == VarDec__VarDec_LB_INT_RB) {
 		printf("Cannot translate: Code contains variables of multi-dimensional array type or parameters of array type.\n");
 		return NULL;//!!!!!!!!!!!!!!
@@ -468,17 +548,23 @@ struct InterCodeNode* translate_VarDec(struct Node* root) {
 
 struct InterCodeNode* translate_ExtDefList(struct Node* root) {
 	if(root == NULL)return NULL;
-
+#ifdef DEBUG
+	printf("enter translate_ExtDefList():%s\t%s\n", root->token, root->lexeme);
+#endif
 	struct Node* extdef = root->child;
 	struct Node* extdeflist = extdef->nextSibling;
 
 	struct InterCodeNode* code1 = translate_ExtDef(extdef);
 	struct InterCodeNode* code2 = translate_ExtDefList(extdeflist);
-	
+
 	return concat(2, code1, code2);
 }
 
 struct InterCodeNode* translate_ExtDef(struct Node* root) {
+	if(root == NULL)return NULL;
+#ifdef DEBUG
+	printf("enter translate_ExtDef():%s\t%s\n", root->token, root->lexeme);
+#endif
 	switch(root->rule) {
 		case ExtDef__Specifier_ExtDecList_SEMI: {
 			struct Node* extdeclist = root->child->nextSibling;
@@ -492,13 +578,26 @@ struct InterCodeNode* translate_ExtDef(struct Node* root) {
 
 			struct InterCodeNode* code1 = translate_FunDec(fundec);
 			struct InterCodeNode* code2 = translate_Compst(compst);
+
+#ifdef DEBUG
+	printf("ExtDef__Specifier_FunDec_Compst\n");
+	printf("--code1:\n");
+	printInterCodes(code1);
+	printf("--code2:\n");
+	printInterCodes(code2);
+#endif
 			return concat(2, code1, code2);
 		}
-		default: return NULL;
+		default: printf("3\n");return NULL;
 	}
 }
 
 struct InterCodeNode* translate_ExtDecList(struct Node* root) {
+	if(root == NULL)return NULL;
+#ifdef DEBUG
+	printf("enter translate_ExtDecList():%s\t%s\n", root->token, root->lexeme);
+#endif
+
 	struct Node* vardec = root->child;
 	struct InterCodeNode* code = translate_VarDec(vardec);
 
@@ -512,6 +611,10 @@ struct InterCodeNode* translate_ExtDecList(struct Node* root) {
 }
 
 struct InterCodeNode* translate_FunDec(struct Node* root) {
+	if(root == NULL)return NULL;
+#ifdef DEBUG
+	printf("enter translate_FunDec():%s\t%s\n", root->token, root->lexeme);
+#endif
 	struct Node* id = root->child;
 	char* function = id->lexeme;
 
@@ -528,6 +631,10 @@ struct InterCodeNode* translate_FunDec(struct Node* root) {
 }
 
 struct InterCodeNode* translate_VarList(struct Node* root) {
+	if(root == NULL)return NULL;
+#ifdef DEBUG
+	printf("enter translate_VarList():%s\t%s\n", root->token, root->lexeme);
+#endif
 	struct Node* paramdec = root->child;
 
 	struct InterCodeNode* code = translate_ParamDec(paramdec);
@@ -543,6 +650,10 @@ struct InterCodeNode* translate_VarList(struct Node* root) {
 }
 
 struct InterCodeNode* translate_ParamDec(struct Node* root) {
+	if(root == NULL)return NULL;
+#ifdef DEBUG
+	printf("enter translate_ParamDec():%s\t%s\n", root->token, root->lexeme);
+#endif
 	struct Node* specifier = root->child;
 	struct Node* vardec = specifier->nextSibling;
 
@@ -555,11 +666,9 @@ struct InterCodeNode* translate_ParamDec(struct Node* root) {
 void generateIR(struct Node* root, char* filename) {
 	constant0 = newOperand(CONSTANT, NULL, 0);
 	constant1 = newOperand(CONSTANT, NULL, 1);
-	
-	icHead = translate_ExtDefList(root);
-#ifdef DEBUG
-	printInterCodes(icHead);
-#endif
 
+	icHead = translate_ExtDefList(root->child);
+	
+	printInterCodes(icHead);
 	// file...
 }
