@@ -7,7 +7,6 @@ typedef enum { VARIABLE, CONSTANT, ADDRESS, TEMP, LABEL} OperandKind;
 typedef enum { ASSIGN, ADD, SUB, MUL, DIVIDE, LABELOP, IFOP, GOTO, RETURNOP, READ, WRITE, CALL, ARG, ASSIGNCALL, FUNCTION, PARAM} OperationKind;
 
 typedef union {
-	char* varName;
 	int var_no;
 	int value;
 }OperandVal;
@@ -46,4 +45,7 @@ void printInterCodes(struct InterCodeNode*);
 
 struct InterCodeNode* newInterCodeNode(); 
 
+
+void generateIR(struct Node* root, char* filename);
+void outputIR2File(char* filename);
 #endif

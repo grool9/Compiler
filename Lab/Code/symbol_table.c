@@ -1,5 +1,7 @@
 #include "common.h"
 
+static int no = 1;
+
 //hash function
 unsigned int hash_pjw(char* name){
 	unsigned int val=0,i;
@@ -51,6 +53,9 @@ void addField(struct Node* node, char* structName){
 	sym->addr = (char*)malloc(LEN);
 	strcpy(sym->addr, structName);
 
+	sym->var_no = no;
+	no++;
+
 	sym->next=table[pos];
 	table[pos]=sym;
 }
@@ -70,7 +75,11 @@ void addElement(struct Node* node){
 		sym->argc = node->argc;
 		sym->argv = node->argv;
 	}
-	else sym->type = node->type;//变量类型
+	else {
+		sym->type = node->type;//变量类型
+		sym->var_no = no;
+		no ++;
+	}
 
 	sym->addr = "\0";
 	sym->next=table[pos];

@@ -25,6 +25,9 @@ struct Symbol{
 	
 	char* addr;
 	struct Symbol* next;
+
+	// lab3
+	int var_no;
 };
 
 struct Symbol* table[N];

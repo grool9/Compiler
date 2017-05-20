@@ -27,14 +27,10 @@ Operand constant0 = NULL;
 Operand constant1 = NULL;
 
 // function
-Operand newOperand(OperandKind kind, char* varName, int val) {
+Operand newOperand(OperandKind kind, int val) {
 	Operand operand = (Operand)malloc(sizeof(struct Operand_));
 	operand->kind = kind;
-
-	if(kind == VARIABLE) {
-		operand->u.varName = varName;
-	}
-	else operand->u.value = val;
+	operand->u.value = val;
 
 	return operand;// return the pointer
 }
@@ -149,16 +145,18 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 		case Exp__INT:{
 			struct Node* intNode = root->child;
 			int value = my_atoi(intNode->lexeme);
-			Operand right = newOperand(CONSTANT, NULL, value);
+			Operand right = newOperand(CONSTANT, value);
 			struct InterCodeNode* code = newInterCodeNode(ASSIGN, place, right, NULL, NULL);
-#ifdef DEBUG
-	printInterCodes(code);
-#endif
 			return code;
 		}
 		case Exp__ID:{
 			struct Node* id = root->child;
-			Operand right = newOperand(VARIABLE, id->lexeme, 0);
+			struct Symbol* sym = lookupVariable(id->lexeme);
+			Operand right = newOperand(VARIABLE, sym->var_no);
+#ifdef DEBUG
+	printf("...EXP__ID\n");
+	printf("%d, %d\n", place, right);
+#endif
 			return newInterCodeNode(ASSIGN, place, right, NULL, NULL);
 		}
 		case Exp__Exp_ASSIGNOP_Exp:{
@@ -168,7 +166,9 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 			struct Node* variable = exp1->child;
 	
 			Operand t1 = new_temp();
-			Operand var = newOperand(VARIABLE, variable->lexeme, 0);
+
+			struct Symbol* sym = lookupVariable(variable->lexeme);
+			Operand var = newOperand(VARIABLE, sym->var_no);
 
 			struct InterCodeNode* c1 = newInterCodeNode(ASSIGN, var ,t1, NULL, NULL);
 			struct InterCodeNode* c2 = newInterCodeNode(ASSIGN, place, var, NULL, NULL);
@@ -359,6 +359,12 @@ struct InterCodeNode* translate_Cond(struct Node* root, Operand label_true, Oper
 			Operand t1 = new_temp();
 			Operand t2 = new_temp();
 			struct InterCodeNode* code1 = translate_Exp(exp1, t1);
+
+#ifdef DEBUG
+	printf("....EXP_RELOP_EXP!\n");
+	printInterCodes(code1);
+#endif
+
 			struct InterCodeNode* code2 = translate_Exp(exp2, t2);
 			char* op = relop->lexeme;
 			struct InterCodeNode* code3 = newInterCodeNode(IFOP, t1, t2, label_true, op);
@@ -520,7 +526,8 @@ struct InterCodeNode* translate_Dec(struct Node* root) {
 	struct Node* vardec = root->child;
 	struct InterCodeNode* code = translate_VarDec(vardec);
 
-	Operand place = newOperand(VARIABLE, vardec->lexeme, 0);
+	struct Symbol* sym = lookupVariable(vardec->lexeme);
+	Operand place = newOperand(VARIABLE, sym->var_no);
 
 	if(root->rule == Dec__VarDec_ASSIGNOP_Exp) {
 		struct Node* exp = vardec->nextSibling->nextSibling;
@@ -664,11 +671,10 @@ struct InterCodeNode* translate_ParamDec(struct Node* root) {
 }
 
 void generateIR(struct Node* root, char* filename) {
-	constant0 = newOperand(CONSTANT, NULL, 0);
-	constant1 = newOperand(CONSTANT, NULL, 1);
+	constant0 = newOperand(CONSTANT, 0);
+	constant1 = newOperand(CONSTANT, 1);
 
 	icHead = translate_ExtDefList(root->child);
-	
-	printInterCodes(icHead);
-	// file...
+
+	outputIR2File(filename);
 }

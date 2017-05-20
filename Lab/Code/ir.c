@@ -5,14 +5,7 @@ struct InterCodeNode* icHead = NULL;
 void printOp(Operand op) {
 	printf("!!%d\n", op);
 	int kind = op->kind;
-	printf("kind:%d\t", kind);
-
-	if(kind == VARIABLE) {
-		printf("%s\n", op->u.varName);
-	}
-	else {
-		printf("%d\n", op->u.value);
-	}
+	printf("%d  %d\t", kind, op->u.value);
 }
 
 void printInterCodes(struct InterCodeNode* root) {
