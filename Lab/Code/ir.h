@@ -4,7 +4,7 @@
 #include "tree.h"
 
 typedef enum { VARIABLE, CONSTANT, ADDRESS, TEMP, LABEL} OperandKind;
-typedef enum { ASSIGN, ADD, SUB, MUL, DIVIDE, LABELOP, IFOP, GOTO, RETURNOP, READ, WRITE, CALL, ARG, ASSIGNCALL} OperationKind;
+typedef enum { ASSIGN, ADD, SUB, MUL, DIVIDE, LABELOP, IFOP, GOTO, RETURNOP, READ, WRITE, CALL, ARG, ASSIGNCALL, FUNCTION, PARAM} OperationKind;
 
 typedef union {
 	char* varName;
@@ -30,7 +30,7 @@ struct InterCode {
 		struct {Operand result, op1, op2; }binop;
 		struct {Operand op; }sigop;
 		struct {Operand op1, op2, label; char* relop; }ifop;
-		struct {char* name; }callop;
+		struct {char* name; } funop;
 		struct {Operand result; char* name; }assigncall;
 	}u;
 };
@@ -42,7 +42,7 @@ struct InterCodeNode {
 
 extern struct InterCodeNode* icHead;
 
-void printInterCodes();
+void printInterCodes(struct InterCodeNode*);
 
 struct InterCodeNode* newInterCodeNode(); 
 

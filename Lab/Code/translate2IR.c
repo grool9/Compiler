@@ -1,11 +1,14 @@
 #include "common.h"
 
+#define DEBUG
+
 // declaration
 struct InterCodeNode* translate_ExtDefList(struct Node* root);
 struct InterCodeNode* translate_ExtDef(struct Node* root);
 struct InterCodeNode* translate_ExtDecList(struct Node* root);
 struct InterCodeNode* translate_FunDec(struct Node* root);
-struct InterCodeNode* translate_StructSpecifier(struct Node* root);
+struct InterCodeNode* translate_VarList(struct Node* root);
+struct InterCodeNode* translate_ParamDec(struct Node* root);
 
 struct InterCodeNode* translate_Exp(struct Node* root, Operand place);
 struct InterCodeNode* translate_Stmt(struct Node* root);
@@ -49,7 +52,7 @@ struct InterCodeNode* newInterCodeNode(OperationKind kind, Operand op1, Operand 
 		node->code.u.binop.op1 = op2;
 		node->code.u.binop.op2 = op3;
 	}
-	else if(kind == LABELOP || kind == GOTO || kind == RETURNOP || kind == READ || kind == ARG) {
+	else if(kind == LABELOP || kind == GOTO || kind == RETURNOP || kind == READ || kind == ARG || kind == PARAM) {
 		node->code.u.sigop.op = op1;
 	}
 	else if(kind == IFOP) {
@@ -58,8 +61,8 @@ struct InterCodeNode* newInterCodeNode(OperationKind kind, Operand op1, Operand 
 		node->code.u.ifop.label = op3;
 		node->code.u.ifop.relop = name;
 	}
-	else if(kind == CALL) {
-		node->code.u.callop.name = name;
+	else if(kind == CALL|| kind == FUNCTION) {
+		node->code.u.funop.name = name;
 	}
 	else if(kind == ASSIGNCALL) {
 		node->code.u.assigncall.result = op1;
@@ -463,10 +466,100 @@ struct InterCodeNode* translate_VarDec(struct Node* root) {
 	return NULL;
 }
 
+struct InterCodeNode* translate_ExtDefList(struct Node* root) {
+	if(root == NULL)return NULL;
+
+	struct Node* extdef = root->child;
+	struct Node* extdeflist = extdef->nextSibling;
+
+	struct InterCodeNode* code1 = translate_ExtDef(extdef);
+	struct InterCodeNode* code2 = translate_ExtDefList(extdeflist);
+	
+	return concat(2, code1, code2);
+}
+
+struct InterCodeNode* translate_ExtDef(struct Node* root) {
+	switch(root->rule) {
+		case ExtDef__Specifier_ExtDecList_SEMI: {
+			struct Node* extdeclist = root->child->nextSibling;
+
+			struct InterCodeNode* code = translate_ExtDecList(extdeclist);
+			return code;
+		}
+		case ExtDef__Specifier_FunDec_Compst: {
+			struct Node* fundec = root->child->nextSibling;
+			struct Node* compst = fundec->nextSibling;
+
+			struct InterCodeNode* code1 = translate_FunDec(fundec);
+			struct InterCodeNode* code2 = translate_Compst(compst);
+			return concat(2, code1, code2);
+		}
+		default: return NULL;
+	}
+}
+
+struct InterCodeNode* translate_ExtDecList(struct Node* root) {
+	struct Node* vardec = root->child;
+	struct InterCodeNode* code = translate_VarDec(vardec);
+
+	if(root->rule == ExtDecList__VarDec_COMMA_ExtDecList) {
+		struct Node* extdeclist = vardec->nextSibling->nextSibling;
+		struct InterCodeNode* code2 = translate_ExtDecList(extdeclist);
+
+		return concat(2, code, code2);
+	}
+	return code;
+}
+
+struct InterCodeNode* translate_FunDec(struct Node* root) {
+	struct Node* id = root->child;
+	char* function = id->lexeme;
+
+	struct InterCodeNode* code1 = newInterCodeNode(FUNCTION, NULL, NULL, NULL, function);
+
+	if(root->rule == FunDec__ID_LP_VarList_RP) {
+		struct Node* varlist = id->nextSibling->nextSibling;
+
+		struct InterCodeNode* code2 = translate_VarList(varlist);
+
+		code1 = concat(2, code1, code2);
+	}
+	return code1;
+}
+
+struct InterCodeNode* translate_VarList(struct Node* root) {
+	struct Node* paramdec = root->child;
+
+	struct InterCodeNode* code = translate_ParamDec(paramdec);
+
+	if(root->rule == VarList__ParamDec_COMMA_VarList) {
+		struct Node* varlist = paramdec->nextSibling->nextSibling;
+		struct InterCodeNode* code2 = translate_VarList(varlist);
+
+		code = concat(2, code, code2);
+	}
+
+	return code;
+}
+
+struct InterCodeNode* translate_ParamDec(struct Node* root) {
+	struct Node* specifier = root->child;
+	struct Node* vardec = specifier->nextSibling;
+
+	struct InterCodeNode* code1 = translate_VarDec(vardec);
+
+	struct InterCodeNode* code2 = newInterCodeNode(PARAM, NULL, NULL, NULL, vardec->lexeme);
+	return concat(2, code1, code2);
+}
+
 void generateIR(struct Node* root, char* filename) {
 	constant0 = newOperand(CONSTANT, NULL, 0);
 	constant1 = newOperand(CONSTANT, NULL, 1);
-//	translate(root);
+	
+	icHead = translate_ExtDefList(root);
+#ifdef DEBUG
+	printInterCodes(icHead);
+#endif
 
 	// file...
 }

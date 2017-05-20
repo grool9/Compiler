@@ -10,8 +10,8 @@ void printOp(Operand op) {
 	printf("value:%d\n", op->u.value);
 }
 
-void printInterCodes() {
-	struct InterCodeNode* cur = icHead;
+void printInterCodes(struct InterCodeNode* root) {
+	struct InterCodeNode* cur = root;
 	while(cur != NULL) {
 		// kind
 		int kind = cur->code.kind;
