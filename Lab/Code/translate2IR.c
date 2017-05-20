@@ -1,10 +1,23 @@
 #include "common.h"
 
 // declaration
+struct InterCodeNode* translate_ExtDefList(struct Node* root);
+struct InterCodeNode* translate_ExtDef(struct Node* root);
+struct InterCodeNode* translate_ExtDecList(struct Node* root);
+struct InterCodeNode* translate_FunDec(struct Node* root);
+struct InterCodeNode* translate_StructSpecifier(struct Node* root);
+
 struct InterCodeNode* translate_Exp(struct Node* root, Operand place);
 struct InterCodeNode* translate_Stmt(struct Node* root);
 struct InterCodeNode* translate_Cond(struct Node* root, Operand label_true, Operand label_false);
 struct InterCodeNode* translate_Args(struct Node* root, struct OperandNode* arg_list);
+struct InterCodeNode* translate_Compst(struct Node* root);
+struct InterCodeNode* translate_DefList(struct Node* root);
+struct InterCodeNode* translate_StmtList(struct Node* root);
+struct InterCodeNode* translate_Def(struct Node* root);
+struct InterCodeNode* translate_DecList(struct Node* root);
+struct InterCodeNode* translate_Dec(struct Node* root);
+struct InterCodeNode* translate_VarDec(struct Node* root);
 
 // constant defination
 Operand constant0 = NULL;
@@ -81,19 +94,24 @@ struct InterCodeNode* concat(int number, ...) {
 	va_list p;
 	va_start(p, number);
 
-	struct InterCodeNode* head = va_arg(p, struct InterCodeNode*);
-	struct InterCodeNode* tail = head;
-	while(tail->next != NULL)tail = tail->next;
-
-	int i = 1;
+	struct InterCodeNode* head = NULL;
+	struct InterCodeNode* tail = NULL;
+	int i = 0;
 	for(;i<number;i++) {
 		struct InterCodeNode* temp = va_arg(p, struct InterCodeNode*);
 		if(temp!=NULL) {
-			tail->next = temp;
-			temp->prev = tail;
+			if(head == NULL) {
+				head = temp;
+				tail = head;
+				while(tail->next != NULL) tail = tail->next;
+			}
+			else {
+				tail->next = temp;
+				temp->prev = tail;
 
-			tail = temp;
-			while(tail->next != NULL) tail = tail->next;
+				tail = temp;
+				while(tail->next != NULL) tail = tail->next;
+			}
 		}
 	}
 
@@ -357,6 +375,92 @@ struct InterCodeNode* translate_Args(struct Node* root, struct OperandNode* arg_
 			return concat(2, code1, code2);
 		}
 	}
+}
+
+struct InterCodeNode* translate_Compst(struct Node* root) {
+	struct Node* cur = root->child->nextSibling;
+	
+	struct InterCodeNode* code = NULL;
+	if(strcmp(cur->token, "DefList") == 0) {
+		struct InterCodeNode* code1= translate_DefList(cur);
+		code = concat(2, code, code1);
+		cur = cur->nextSibling;
+	}
+	if(strcmp(cur->token, "StmtList") == 0) {
+		struct InterCodeNode* code2 = translate_StmtList(cur);
+		code = concat(2, code, code2);
+	}
+
+	return code;
+}
+
+struct InterCodeNode* translate_DefList(struct Node* root) {
+	struct Node* def = root->child;
+	struct Node* deflist = def->nextSibling;
+
+	struct InterCodeNode* code1 = translate_Def(def);
+	struct InterCodeNode* code2 = translate_DefList(deflist);
+
+	return concat(2, code1, code2);
+}
+
+struct InterCodeNode* translate_StmtList(struct Node* root) {
+	struct Node* stmt = root->child;
+	struct Node* stmtlist = stmt->nextSibling;
+
+	struct InterCodeNode* code1 = translate_Stmt(stmt);
+	struct InterCodeNode* code2 = translate_StmtList(stmtlist);
+
+	return concat(2, code1, code2);
+}
+
+struct InterCodeNode* translate_Def(struct Node* root) {
+	struct Node* specifier = root->child;
+	struct Node* declist = specifier->nextSibling;
+
+	// specifier ........
+	
+	struct InterCodeNode* code2 = translate_DecList(declist);
+	return code2;
+}
+
+struct InterCodeNode* translate_DecList(struct Node* root) {
+	struct Node* dec = root->child;
+	struct InterCodeNode* code = translate_Dec(dec);
+
+	if(root->rule == DecList__Dec_COMMA_DecList) {
+		struct Node* declist = dec->nextSibling->nextSibling;
+		struct InterCodeNode* code2 = translate_DecList(root);
+		code = concat(2, code, code2);
+	}
+
+	return code;
+}
+
+struct InterCodeNode* translate_Dec(struct Node* root) {
+	struct Node* vardec = root->child;
+	struct InterCodeNode* code = translate_VarDec(vardec);
+
+	Operand place = newOperand(VARIABLE, vardec->lexeme, 0);
+
+	if(root->rule == Dec__VarDec_ASSIGNOP_Exp) {
+		struct Node* exp = vardec->nextSibling->nextSibling;
+		struct InterCodeNode* code2 = translate_Exp(exp, place);
+		code = concat(2, code, code2);
+	}
+
+	return code;
+}
+
+struct InterCodeNode* translate_VarDec(struct Node* root) {
+	if(root->rule == VarDec__VarDec_LB_INT_RB) {
+		printf("Cannot translate: Code contains variables of multi-dimensional array type or parameters of array type.\n");
+		return NULL;//!!!!!!!!!!!!!!
+	}
+	
+	struct Node* id = root->child;
+	root->lexeme = id->lexeme;
+	return NULL;
 }
 
 void generateIR(struct Node* root, char* filename) {

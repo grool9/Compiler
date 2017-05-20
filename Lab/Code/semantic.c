@@ -69,7 +69,7 @@ void semanticAnalysis(struct Node* root){
 	case OptTag__ID: opttag__id(root); break;
 	case Tag__ID: tag__id(root); break;
 	case VarDec__ID:vardec__id(root); break;
-	case VarDec__VarDec_LB_int_RB:vardec__vardec_lb_int_rb(root); break;
+	case VarDec__VarDec_LB_INT_RB:vardec__vardec_lb_int_rb(root); break;
 	case FunDec__ID_LP_VarList_RP: fundec__id_lp_varlist_rp(root); break;
 	case FunDec__ID_LP_RP: fundec__id_lp_rp(root); break;
 	case VarList__ParamDec_COMMA_VarList: varlist__paramdec_comma_varlist(root); break;

@@ -64,7 +64,7 @@ void setVal(char* token, char* lexeme){
 	yylval=(struct Node*)malloc(sizeof(struct Node));
 	yylval->terminal=1;
 	yylval->token=(char*)malloc(sizeof(char)*LEN);
-	yylval->lexeme=(char*)malloc(sizeof(char)*LEN); 
+	yylval->lexeme=(char*)malloc(sizeof(char)*LEN);
 	strcpy(yylval->token, token);
 	strcpy(yylval->lexeme,lexeme);
 	yylval->lineno=yylineno;

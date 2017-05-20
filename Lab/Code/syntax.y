@@ -53,7 +53,7 @@ OptTag			:	ID							{$$=insert(OptTag__ID,"OptTag",1,$1);}
 Tag				:	ID							{$$=insert(Tag__ID,"Tag",1,$1);}
 				;
 VarDec			:	ID							{$$=insert(VarDec__ID,"VarDec",1,$1);}
-				|	VarDec LB INT RB			{$$=insert(VarDec__VarDec_LB_int_RB,"VarDec",4,$1,$2,$3,$4);}
+				|	VarDec LB INT RB			{$$=insert(VarDec__VarDec_LB_INT_RB,"VarDec",4,$1,$2,$3,$4);}
 				|	VarDec LB error RB			{yyerrok;}
 				;
 FunDec			:	ID LP VarList RP			{$$=insert(FunDec__ID_LP_VarList_RP,"FunDec",4,$1,$2,$3,$4);}

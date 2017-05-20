@@ -17,7 +17,7 @@ typedef enum{
 	OptTag__ID, 
 	Tag__ID, 
 	VarDec__ID, 
-	VarDec__VarDec_LB_int_RB, 
+	VarDec__VarDec_LB_INT_RB, 
 	FunDec__ID_LP_VarList_RP, 
 	FunDec__ID_LP_RP, 
 	VarList__ParamDec_COMMA_VarList, 
@@ -85,7 +85,7 @@ struct FieldList_
 struct Node{
 	int terminal;
 	char* token;
-	char* lexeme;// =>name
+	char* lexeme; //词素
 	int lineno;
 	struct Node* child;
 	struct Node* nextSibling;
