@@ -1,31 +1,18 @@
-struct Node 
+int fact(int n) 
 {
-	int c;
-	int c = 0;
-	struct Node mm =1;
-} b;
-
-struct Type
-{
-	int ass,css;
-};
-
-struct Node inc(int temp1, int temp2) {
-	int x,y,a[10][18];
-	float t = 1.9;
-	struct Type p;
-
-	x = y + 3;
-	a[1][1] = 1;
-	b.c = x;
-
-	return p;
+	if (n == 1)
+		return n;
+	else
+		return (n * fact(n - 1)); 
 }
-
-int main() {
-	struct Type type[10];
-	a = a();
-	type[1.5] = b;
-	b= type[0.9];
-	b.b = 1;
+int main()
+{
+	int m, result;
+	m = read();
+	if (m > 1)
+		result = fact(m);
+	else
+		result = 1;
+	write(result);
+	return 0;
 }
