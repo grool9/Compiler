@@ -5,6 +5,7 @@ FILE* fp = NULL;
 struct InterCodeNode* icHead = NULL;
 
 void printOp2File(Operand op) {
+	if(op == NULL)return;
 	switch(op->kind) {
 		case VARIABLE: fprintf(fp, "v%d", op->u.var_no);break;
 		case CONSTANT: fprintf(fp, "#%d", op->u.value);break;
@@ -126,6 +127,7 @@ void outputIR2File(char* filename) {
 
 // used to debug
 void printOp(Operand op) {
+	if(op == NULL)return;
 	switch(op->kind) {
 		case VARIABLE: printf("v%d", op->u.var_no);break;
 		case CONSTANT: printf("#%d", op->u.value);break;
