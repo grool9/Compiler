@@ -139,6 +139,9 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 	if(root == NULL)return NULL;
 
 	switch(root->rule) {
+		case Exp__LP_Exp_RP: {
+			return translate_Exp(root->child->nextSibling, place);
+		}
 		case Exp__INT:{
 			struct Node* intNode = root->child;
 			int value = my_atoi(intNode->lexeme);
@@ -188,7 +191,10 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 #endif
 			return code;
 		}
-		case Exp__Exp_PLUS_Exp:{
+		case Exp__Exp_PLUS_Exp:
+		case Exp__Exp_MINUS_Exp:
+		case Exp__Exp_STAR_Exp:
+		case Exp__Exp_DIV_Exp:{
 			struct Node* exp1 = root->child;
 			struct Node* exp2 = exp1->nextSibling->nextSibling;
 
@@ -198,7 +204,17 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 			struct InterCodeNode* code2 = translate_Exp(exp2, t2);
 			
 			struct InterCodeNode* code3 = NULL;
-			if(place != NULL)code3 = newInterCodeNode(ADD, place, t1, t2, NULL);
+			if(place != NULL) {
+				if(root->rule == Exp__Exp_PLUS_Exp)code3 = newInterCodeNode(ADD, place, t1, t2, NULL);
+				else if(root->rule == Exp__Exp_MINUS_Exp)code3 = newInterCodeNode(SUB, place, t1, t2, NULL);
+				else if(root->rule == Exp__Exp_STAR_Exp)code3 = newInterCodeNode(MUL, place, t1, t2, NULL);
+				else code3 = newInterCodeNode(DIVIDE, place, t1, t2, NULL);
+			}
+#ifdef DEBUG
+	//printf("!!!!!!!exp binop\n");
+	//outputIR(code1);
+	//outputIR(code2);
+#endif
 
 			return concat(3, code1, code2, code3);
 		}
@@ -286,6 +302,10 @@ struct InterCodeNode* translate_Stmt(struct Node* root) {
 
 			Operand t1 = new_temp();
 			struct InterCodeNode* code1 = translate_Exp(exp, t1);
+#ifdef DEBUG
+	//printf("`````return exp;\n");
+	//outputIR(code1);
+#endif
 			struct InterCodeNode* code2 = newInterCodeNode(RETURNOP, t1, NULL, NULL ,NULL);
 			return concat(2, code1, code2);
 		}
@@ -324,9 +344,15 @@ struct InterCodeNode* translate_Stmt(struct Node* root) {
 #ifdef DEBUG
 	//printf("---if else:\n");
 	//outputIR(code);
+	//outputIR(c1);
+	//outputIR(code2);
+	//outputIR(c2);
+	//outputIR(c3);
+	//outputIR(code3);
 	//exit(0);
 #endif
 			return code;
+			//return NULL;
 		}
 		case Stmt__WHILE_LP_Exp_RP_Stmt: {
 			struct Node* exp = root->child->nextSibling->nextSibling;
@@ -377,8 +403,8 @@ struct InterCodeNode* translate_Cond(struct Node* root, Operand label_true, Oper
 			struct InterCodeNode* code = concat(4, code1, code2, code3, code4);
 
 #ifdef DEBUG
-	printf("--------\n");
-	outputIR(code);
+	//printf("--------\n");
+	//outputIR(code);
 	//exit(0);
 #endif
 			return code;
@@ -512,9 +538,14 @@ struct InterCodeNode* translate_DecList(struct Node* root) {
 	struct Node* dec = root->child;
 	struct InterCodeNode* code = translate_Dec(dec);
 
+#ifdef DEBUG
+	//printf("/////declist:\n");
+	//outputIR(code);
+#endif
+
 	if(root->rule == DecList__Dec_COMMA_DecList) {
 		struct Node* declist = dec->nextSibling->nextSibling;
-		struct InterCodeNode* code2 = translate_DecList(root);
+		struct InterCodeNode* code2 = translate_DecList(declist);
 		code = concat(2, code, code2);
 	}
 
@@ -556,6 +587,12 @@ struct InterCodeNode* translate_ExtDefList(struct Node* root) {
 	struct Node* extdeflist = extdef->nextSibling;
 
 	struct InterCodeNode* code1 = translate_ExtDef(extdef);
+
+#ifdef DEBUG
+	//printf(",,,,,,,extdeflist:\n");
+	//outputIR(code1);
+#endif
+
 	struct InterCodeNode* code2 = translate_ExtDefList(extdeflist);
 
 	return concat(2, code1, code2);
