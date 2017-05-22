@@ -2,15 +2,7 @@
 
 #define DEBUG
 
-void delNodeList(struct Node* node) {
-	struct Node* p = node;
-	while(p != NULL) {
-		struct Node* d = p;
-		p = p->nextSibling;
-		free(d);
-	}
-}
-
+// merge the constant
 void const_folding(struct Node* node) {
 	switch(node->rule) {
 		case Exp__Exp_PLUS_Exp:
@@ -81,16 +73,24 @@ void const_folding(struct Node* node) {
 		}
 		case Exp__INT: {
 			node->isConstant = true;
-			node->value = my_atoi(node->child->lexeme);
-			
+			node->value = my_atoi(node->child->lexeme);	
 			break;
 		}
-		default:{
+		default:{ //depth travesal
 			struct Node* child = node->child;
 			while(child != NULL) {
 				const_folding(child);
 				child = child->nextSibling;
 			}
 		}
+	}
+}
+
+/* optimize the goto and label
+ * reduce operation GOTO and LABELOP
+ */
+void optimize_control() {
+	struct InterCodeNode p = icHead;
+	for(; p != NULL; p = p->next) {
 	}
 }

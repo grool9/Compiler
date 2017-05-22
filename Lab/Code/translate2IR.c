@@ -69,6 +69,7 @@ struct InterCodeNode* newInterCodeNode(OperationKind kind, Operand op1, Operand 
 		node->code.u.decop.size = size;
 	}
 
+	//node->valid = false;
 	node->prev = NULL;
 	node->next = NULL;
 

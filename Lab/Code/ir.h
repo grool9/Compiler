@@ -37,6 +37,8 @@ struct InterCode {
 
 struct InterCodeNode {
 	struct InterCode code;
+	//bool valid;
+	//int blockNo;
 	struct InterCodeNode* prev, *next;
 };
 
