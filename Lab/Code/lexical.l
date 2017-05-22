@@ -75,4 +75,7 @@ void setVal(char* token, char* lexeme){
 	yylval->type = none_type;
 	yylval->rule = No_Rule;
 	yylval->isLeftVal = false;
+
+	//lab3
+	yylval->isConstant = false;
 }

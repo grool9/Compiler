@@ -150,7 +150,7 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 			if(place == NULL) return NULL;
 
 			struct Node* intNode = root->child;
-			int value = my_atoi(intNode->lexeme);
+			int value = intNode->value;
 			Operand right = newOperand(CONSTANT, value);
 
 			struct InterCodeNode* code = newInterCodeNode(ASSIGN, place, right, NULL, NULL,0);
@@ -802,6 +802,12 @@ struct InterCodeNode* translate_ParamDec(struct Node* root) {
 }
 
 void generateIR(struct Node* root, char* filename) {
+	// preprocessing
+	//outputTree(root, 0);
+	const_folding(root);
+	//printf("----------------------------------\n");
+	//outputTree(root, 0);
+
 	constant0 = newOperand(CONSTANT, 0);
 	constant1 = newOperand(CONSTANT, 1);
 

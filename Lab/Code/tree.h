@@ -103,7 +103,10 @@ struct Node{
 			Type* argv;
 		};
 	};
-
+	
+	// lab3
+	int value;
+	bool isConstant;
 };
 
 // none type

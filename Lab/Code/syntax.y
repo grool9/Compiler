@@ -172,7 +172,8 @@ void outputTree(struct Node* root,int n){
 				printf(": %s", p->lexeme);
 			}
 			else if(strcmp(p->token, "INT")==0) {
-				printf(": %d", my_atoi(p->lexeme));//10
+				//printf(": %d", my_atoi(p->lexeme));//10
+				printf(": %d", p->value);
 			}
 			else if(strcmp(p->token, "FLOAT")==0) {
 				printf(": %f", atof(p->lexeme));
@@ -198,6 +199,9 @@ struct Node* insert(Rule rule, char* token, int argc, ...){
 	head->type = none_type;
 	head->isLeftVal = false;
 
+	//lab3
+	head->isConstant = false;
+	
 	struct Node* current=head;
 
 	va_list p;
