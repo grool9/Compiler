@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
 
 	// lab3
 	if(!isWrong) {
-		printf("hello lab3\n");
+		//printf("hello lab3\n");
 		generateIR(root, argv[2]);
 	}
 

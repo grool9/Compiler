@@ -12,6 +12,8 @@ void printOp2File(Operand op) {
 		case ADDRESS: fprintf(fp, "&v%d", op->u.var_no); break;
 		case TEMP: fprintf(fp, "t%d", op->u.var_no); break;
 		case LABEL: fprintf(fp, "label%d", op->u.var_no); break;
+		case VPOINTER: fprintf(fp, "*v%d", op->u.var_no);break;
+		case TPOINTER: fprintf(fp, "*t%d", op->u.var_no);break;
 		default : printf("UNK operand\n");
 	}
 }
@@ -134,6 +136,8 @@ void printOp(Operand op) {
 		case ADDRESS: printf("&v%d", op->u.var_no); break;
 		case TEMP: printf("t%d", op->u.var_no); break;
 		case LABEL: printf("label%d", op->u.var_no); break;
+		case VPOINTER: printf("*v%d", op->u.var_no);break;
+		case TPOINTER: printf("*t%d", op->u.var_no);break;
 		default : printf("UNK operand\n");
 	}
 }
@@ -234,6 +238,12 @@ void outputIR(struct InterCodeNode* head) {
 							printOp(p->code.u.sigop.op);
 							break;
 						}
+			case DEC: {
+						  printf("DEC ");
+						  printOp(p->code.u.decop.op);
+						  printf(" %d", p->code.u.decop.size);
+						  break;
+					  }
 			default: {
 				printf("UNK operation!\n");
 						}

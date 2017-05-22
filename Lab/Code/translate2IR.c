@@ -35,7 +35,7 @@ Operand newOperand(OperandKind kind, int val) {
 	return operand;// return the pointer
 }
 
-struct InterCodeNode* newInterCodeNode(OperationKind kind, Operand op1, Operand op2, Operand op3, char* name) {
+struct InterCodeNode* newInterCodeNode(OperationKind kind, Operand op1, Operand op2, Operand op3, char* name, int size) {
 	struct InterCodeNode* node = (struct InterCodeNode*)malloc(sizeof(struct InterCodeNode));
 	node->code.kind = kind;
 	
@@ -63,6 +63,10 @@ struct InterCodeNode* newInterCodeNode(OperationKind kind, Operand op1, Operand 
 	else if(kind == CALL) {
 		node->code.u.callop.result = op1;
 		node->code.u.callop.name = name;
+	}
+	else if(kind == DEC) {
+		node->code.u.decop.op = op1;
+		node->code.u.decop.size = size;
 	}
 
 	node->prev = NULL;
@@ -148,7 +152,7 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 			Operand right = newOperand(CONSTANT, value);
 
 			struct InterCodeNode* code = NULL;
-			if(place != NULL)code = newInterCodeNode(ASSIGN, place, right, NULL, NULL);
+			if(place != NULL)code = newInterCodeNode(ASSIGN, place, right, NULL, NULL,0);
 #ifdef DEBUG
 	//printf("\t");
 	//outputIR(code);
@@ -162,33 +166,68 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 
 			if(place == NULL) return NULL;
 
-			return newInterCodeNode(ASSIGN, place, right, NULL, NULL);
+			return newInterCodeNode(ASSIGN, place, right, NULL, NULL,0);
 		}
 		case Exp__Exp_ASSIGNOP_Exp:{
 			struct Node* exp1 = root->child;
 			struct Node* exp2 = exp1->nextSibling->nextSibling;
-	
-			struct Node* variable = exp1->child;
-	
-			Operand t1 = new_temp();
 
+			// structure variable
+			struct Node* variable = exp1->child;	
 			struct Symbol* sym = lookupVariable(variable->lexeme);
 			Operand var = newOperand(VARIABLE, sym->var_no);
+		
+			struct InterCodeNode* code = NULL;
+			if(exp1->rule == Exp__ID) {
+				Operand t1 = new_temp();
+				struct InterCodeNode* code1 = translate_Exp(exp2, t1);
 
-			struct InterCodeNode* c1 = newInterCodeNode(ASSIGN, var ,t1, NULL, NULL);
-			struct InterCodeNode* c2 = NULL;
-			if(place != NULL)c2 = newInterCodeNode(ASSIGN, place, var, NULL, NULL);
+				struct InterCodeNode* c1 = newInterCodeNode(ASSIGN, var ,t1, NULL, NULL,0);
+				struct InterCodeNode* c2 = NULL;
+				if(place != NULL)c2 = newInterCodeNode(ASSIGN, place, var, NULL, NULL,0);
 
-			struct InterCodeNode* code1 = translate_Exp(exp2, t1);
-			struct InterCodeNode* code2 = concat(2, c1, c2);
+				struct InterCodeNode* code2 = concat(2, c1, c2);
+				code = concat(2, code1, code2);
+			}
+			else if(exp1->rule == Exp__Exp_DOT_ID) {
+				Type t = sym->type;
+				assert(t->kind == _STRUCTURE_);
+				FieldList structure = t->u.structure;
 
-			struct InterCodeNode* code = concat(2, code1, code2);
-#ifdef DEBUG
-	//printf("place:\n");
-	//printOp(place);
-	//printf("====exp = exp====\n");
-	//outputIR(code);
-#endif
+				int all_count = 0;
+				FieldList p = structure;
+				for(; p != NULL; p = p->tail, all_count++);
+
+				int size = all_count * 4;
+				struct InterCodeNode* code1 = newInterCodeNode(DEC, NULL, NULL, NULL, NULL, size);
+
+				struct InterCodeNode* code2 = NULL;
+				struct InterCodeNode* code3 = NULL;
+				// find the field
+				struct Node* field = variable->nextSibling->nextSibling;
+				char* name = field->lexeme;
+				int count = 0;
+				p = structure;
+				for(; p != NULL; p = p->tail, count++) {
+					if(strcmp(name, p->name) == 0)break;
+				}
+				
+				Operand temp1 = new_temp();
+				Operand v = newOperand(ADDRESS, var->u.var_no);
+				if(count == 0) {
+					code2 = newInterCodeNode(ASSIGN, temp1, v, NULL, NULL, 0);
+				}
+				else {
+					Operand constantsize = newOperand(CONSTANT, count*4);
+					code2 = newInterCodeNode(ADD, temp1, v, constantsize, NULL, 0);
+				}
+
+				Operand place = newOperand(TPOINTER, temp1->u.var_no);
+				code3 = translate_Exp(exp2, place);
+
+				code = concat(3, code1, code2, code3);
+			}
+
 			return code;
 		}
 		case Exp__Exp_PLUS_Exp:
@@ -205,10 +244,10 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 			
 			struct InterCodeNode* code3 = NULL;
 			if(place != NULL) {
-				if(root->rule == Exp__Exp_PLUS_Exp)code3 = newInterCodeNode(ADD, place, t1, t2, NULL);
-				else if(root->rule == Exp__Exp_MINUS_Exp)code3 = newInterCodeNode(SUB, place, t1, t2, NULL);
-				else if(root->rule == Exp__Exp_STAR_Exp)code3 = newInterCodeNode(MUL, place, t1, t2, NULL);
-				else code3 = newInterCodeNode(DIVIDE, place, t1, t2, NULL);
+				if(root->rule == Exp__Exp_PLUS_Exp)code3 = newInterCodeNode(ADD, place, t1, t2, NULL,0);
+				else if(root->rule == Exp__Exp_MINUS_Exp)code3 = newInterCodeNode(SUB, place, t1, t2, NULL,0);
+				else if(root->rule == Exp__Exp_STAR_Exp)code3 = newInterCodeNode(MUL, place, t1, t2, NULL,0);
+				else code3 = newInterCodeNode(DIVIDE, place, t1, t2, NULL,0);
 			}
 #ifdef DEBUG
 	//printf("!!!!!!!exp binop\n");
@@ -226,7 +265,7 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 			struct InterCodeNode* code1 = translate_Exp(exp1, t1);
 			
 			struct InterCodeNode* code2 = NULL;
-			if(place != NULL)code2 = newInterCodeNode(SUB, place, constant0, t1, NULL);
+			if(place != NULL)code2 = newInterCodeNode(SUB, place, constant0, t1, NULL,0);
 
 			return concat(2, code1, code2);
 		}
@@ -237,15 +276,15 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 			Operand label1 = new_label();
 			Operand label2 = new_label();
 
-			struct InterCodeNode* code0 = newInterCodeNode(ASSIGN, place, constant0, NULL, NULL);
+			struct InterCodeNode* code0 = newInterCodeNode(ASSIGN, place, constant0, NULL, NULL,0);
 			struct InterCodeNode* code1 = translate_Cond(root, label1, label2);
-			struct InterCodeNode* c1 = newInterCodeNode(LABELOP, label1, NULL, NULL, NULL);
+			struct InterCodeNode* c1 = newInterCodeNode(LABELOP, label1, NULL, NULL, NULL,0);
 			
 			struct InterCodeNode* c2 = NULL;
-			if(place != NULL)c2 = newInterCodeNode(ASSIGN, place, constant1, NULL, NULL);
+			if(place != NULL)c2 = newInterCodeNode(ASSIGN, place, constant1, NULL, NULL,0);
 		
 			struct InterCodeNode* code2 = concat(2, c1, c2);
-			struct InterCodeNode* code3 = newInterCodeNode(LABELOP, label2, NULL, NULL, NULL);
+			struct InterCodeNode* code3 = newInterCodeNode(LABELOP, label2, NULL, NULL, NULL,0);
 
 			return concat(4, code0 ,code1, code2, code3);
 		}
@@ -253,8 +292,8 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 			struct Node* id = root->child;
 			char* function = id->lexeme;
 
-			struct InterCodeNode* c1 = newInterCodeNode(READ, place, NULL, NULL, NULL);
-			struct InterCodeNode* c2 = newInterCodeNode(CALL, NULL, NULL, NULL, function);
+			struct InterCodeNode* c1 = newInterCodeNode(READ, place, NULL, NULL, NULL,0);
+			struct InterCodeNode* c2 = newInterCodeNode(CALL, NULL, NULL, NULL, function,0);
 
 			if(strcmp(function, "read")==0) return c1;
 			else return c2;
@@ -272,18 +311,74 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 			struct InterCodeNode* code1 = translate_Args(args, arg_list);
 
 			Operand first_arg = arg_list->next->op;
-			struct InterCodeNode* c1 = newInterCodeNode(WRITE, first_arg, NULL, NULL, NULL);
+			struct InterCodeNode* c1 = newInterCodeNode(WRITE, first_arg, NULL, NULL, NULL,0);
 			
 			if(strcmp(function, "write")==0) return concat(2, code1, c1);
 		
-			struct InterCodeNode* code2 = newInterCodeNode(ARG, first_arg, NULL, NULL, NULL);
+			struct InterCodeNode* code2 = newInterCodeNode(ARG, first_arg, NULL, NULL, NULL,0);
 
 			struct OperandNode* cur = arg_list->next->next;
 			for(;cur != NULL; cur = cur->next) {
 				code2 = concat(2,code2, cur->op);
 			}
-			struct InterCodeNode* c2 = newInterCodeNode(CALL, place, NULL, NULL, function);
+			struct InterCodeNode* c2 = newInterCodeNode(CALL, place, NULL, NULL, function,0);
 			return concat(3, code1, code2, c2);
+		}
+		case Exp__Exp_LB_Exp_RB: {
+			printf("Cannot translate: Code contains variables of multi-dimensional array type or parameters of array type.\n");
+			exit(0);
+		}
+		case Exp__Exp_DOT_ID: {
+			struct Node* id1 = root->child->child;// must be id !!!!!!!NEED
+			struct Node* id2 = root->child->nextSibling->nextSibling;
+			
+			struct Symbol* sym = lookupVariable(id1->lexeme);
+			Type type = sym->type;
+			int var_no = sym->var_no;
+
+			assert(type->kind == _STRUCTURE_);
+
+			FieldList structure = type->u.structure;
+			// find the field
+			char* name = id2->lexeme;
+			FieldList p = structure;
+			int count = 0;
+			for(; p != NULL; p = p->tail,count++) {
+				if(strcmp(name, p->name)==0) break;
+			}
+
+			struct InterCodeNode* code = NULL;
+			if(count == 0) {
+				Operand t = new_temp();
+				Operand op = newOperand(VPOINTER, var_no);
+				code = newInterCodeNode(ASSIGN, t, op, NULL, NULL,0);	
+#ifdef DEBUG
+	//printf(",,,,,,DOT\n");
+	//printOp(t);
+	//printOp(op);
+	//outputIR(code);
+#endif
+			}
+			else {
+				Operand t1 = new_temp();
+				Operand op1 = newOperand(VARIABLE, var_no);
+				Operand op2 = newOperand(CONSTANT, count * 4);
+				struct InterCodeNode* code1 = newInterCodeNode(ADD, t1, op1, op2, NULL,0);
+				Operand t2 = new_temp();
+				Operand op = newOperand(TPOINTER, t1->u.var_no);
+				struct InterCodeNode* code2 = newInterCodeNode(ASSIGN, t2, op, NULL, NULL,0);
+
+				code = concat(2, code1, code2);
+			}
+#ifdef DEBUG
+	//printf(",,,,,,DOT\n");
+	//outputIR(code);
+#endif
+			return code;
+		}
+		default: {
+			printf("UNK EXP!\n");
+			exit(0);
 		}
 	}
 }
@@ -306,7 +401,7 @@ struct InterCodeNode* translate_Stmt(struct Node* root) {
 	//printf("`````return exp;\n");
 	//outputIR(code1);
 #endif
-			struct InterCodeNode* code2 = newInterCodeNode(RETURNOP, t1, NULL, NULL ,NULL);
+			struct InterCodeNode* code2 = newInterCodeNode(RETURNOP, t1, NULL, NULL ,NULL,0);
 			return concat(2, code1, code2);
 		}
 		case Stmt__IF_LP_Exp_RP_Stmt: {
@@ -317,8 +412,8 @@ struct InterCodeNode* translate_Stmt(struct Node* root) {
 			Operand label2 = new_label();
 			struct InterCodeNode* code1 = translate_Cond(exp, label1, label2);
 			struct InterCodeNode* code2 = translate_Stmt(stmt1);
-			struct InterCodeNode* c1 = newInterCodeNode(LABELOP, label1, NULL, NULL, NULL);
-			struct InterCodeNode* c2 = newInterCodeNode(LABELOP, label2, NULL, NULL, NULL);
+			struct InterCodeNode* c1 = newInterCodeNode(LABELOP, label1, NULL, NULL, NULL,0);
+			struct InterCodeNode* c2 = newInterCodeNode(LABELOP, label2, NULL, NULL, NULL,0);
 
 			return concat(4, code1, c1, code2, c2);
 		}
@@ -335,10 +430,10 @@ struct InterCodeNode* translate_Stmt(struct Node* root) {
 			struct InterCodeNode* code2 = translate_Stmt(stmt1);
 			struct InterCodeNode* code3 = translate_Stmt(stmt2);
 
-			struct InterCodeNode* c1 = newInterCodeNode(LABELOP, label1, NULL, NULL, NULL);
-			struct InterCodeNode* c2 = newInterCodeNode(GOTO, label3, NULL, NULL, NULL);
-			struct InterCodeNode* c3 = newInterCodeNode(LABELOP, label2, NULL, NULL, NULL);
-			struct InterCodeNode* c4 = newInterCodeNode(LABELOP, label3, NULL, NULL, NULL);
+			struct InterCodeNode* c1 = newInterCodeNode(LABELOP, label1, NULL, NULL, NULL,0);
+			struct InterCodeNode* c2 = newInterCodeNode(GOTO, label3, NULL, NULL, NULL,0);
+			struct InterCodeNode* c3 = newInterCodeNode(LABELOP, label2, NULL, NULL, NULL,0);
+			struct InterCodeNode* c4 = newInterCodeNode(LABELOP, label3, NULL, NULL, NULL,0);
 
 			struct InterCodeNode* code = concat(7, code1, c1, code2, c2, c3, code3, c4);
 #ifdef DEBUG
@@ -365,13 +460,14 @@ struct InterCodeNode* translate_Stmt(struct Node* root) {
 			struct InterCodeNode* code1 = translate_Cond(exp, label2, label3);
 			struct InterCodeNode* code2 = translate_Stmt(stmt1);
 			
-			struct InterCodeNode* c1 = newInterCodeNode(LABELOP, label1, NULL, NULL, NULL);
-			struct InterCodeNode* c2 = newInterCodeNode(LABELOP, label2, NULL, NULL, NULL);
-			struct InterCodeNode* c3 = newInterCodeNode(GOTO, label1, NULL, NULL, NULL);
-			struct InterCodeNode* c4 = newInterCodeNode(LABELOP, label3, NULL, NULL, NULL);
+			struct InterCodeNode* c1 = newInterCodeNode(LABELOP, label1, NULL, NULL, NULL,0);
+			struct InterCodeNode* c2 = newInterCodeNode(LABELOP, label2, NULL, NULL, NULL,0);
+			struct InterCodeNode* c3 = newInterCodeNode(GOTO, label1, NULL, NULL, NULL,0);
+			struct InterCodeNode* c4 = newInterCodeNode(LABELOP, label3, NULL, NULL, NULL,0);
 			struct InterCodeNode* code = concat(6 ,c1, code1, c2, code2, c3, c4);
 			return concat(6 ,c1, code1, c2, code2, c3, c4);
 			}
+		default: printf("STMT UNK!\n");
 	}
 }
 
@@ -397,8 +493,8 @@ struct InterCodeNode* translate_Cond(struct Node* root, Operand label_true, Oper
 #endif
 
 			char* op = relop->lexeme;
-			struct InterCodeNode* code3 = newInterCodeNode(IFOP, t1, t2, label_true, op);
-			struct InterCodeNode* code4 = newInterCodeNode(GOTO, label_false, NULL, NULL ,NULL);
+			struct InterCodeNode* code3 = newInterCodeNode(IFOP, t1, t2, label_true, op,0);
+			struct InterCodeNode* code4 = newInterCodeNode(GOTO, label_false, NULL, NULL ,NULL,0);
 
 			struct InterCodeNode* code = concat(4, code1, code2, code3, code4);
 
@@ -419,7 +515,7 @@ struct InterCodeNode* translate_Cond(struct Node* root, Operand label_true, Oper
 			Operand label1 = new_label();
 			struct InterCodeNode* code1 = translate_Cond(exp1, label1, label_false);
 			struct InterCodeNode* code2 = translate_Cond(exp2, label_true, label_false);
-			struct InterCodeNode* c = newInterCodeNode(LABELOP, label1, NULL, NULL, NULL);
+			struct InterCodeNode* c = newInterCodeNode(LABELOP, label1, NULL, NULL, NULL,0);
 			return concat(3, code1, c, code2);
 		}
 		case Exp__Exp_OR_Exp:{
@@ -429,14 +525,14 @@ struct InterCodeNode* translate_Cond(struct Node* root, Operand label_true, Oper
 			Operand label1 = new_label();
 			struct InterCodeNode* code1 = translate_Cond(exp1, label_true, label1);
 			struct InterCodeNode* code2 = translate_Cond(exp2, label_true, label_false);
-			struct InterCodeNode* c = newInterCodeNode(LABELOP, label1, NULL, NULL, NULL);
+			struct InterCodeNode* c = newInterCodeNode(LABELOP, label1, NULL, NULL, NULL,0);
 			return concat(3, code1, c, code2);
 		}
 		default: {
 					Operand t1 = new_temp();
 					struct InterCodeNode* code1 = translate_Exp(root, t1);
-					struct InterCodeNode* code2 = newInterCodeNode(IFOP, t1, constant0, label_true, "!=");
-					struct InterCodeNode* code3 = newInterCodeNode(GOTO, label_false, NULL, NULL, NULL);
+					struct InterCodeNode* code2 = newInterCodeNode(IFOP, t1, constant0, label_true, "!=",0);
+					struct InterCodeNode* code3 = newInterCodeNode(GOTO, label_false, NULL, NULL, NULL,0);
 
 					return concat(3, code1, code2, code3);
 				 }
@@ -571,13 +667,16 @@ struct InterCodeNode* translate_Dec(struct Node* root) {
 
 struct InterCodeNode* translate_VarDec(struct Node* root) {
 	if(root == NULL)return NULL;
+
 	if(root->rule == VarDec__VarDec_LB_INT_RB) {
 		printf("Cannot translate: Code contains variables of multi-dimensional array type or parameters of array type.\n");
-		return NULL;//!!!!!!!!!!!!!!
+		//return NULL;
+		exit(0);
 	}
 	
 	struct Node* id = root->child;
 	root->lexeme = id->lexeme;
+
 	return NULL;
 }
 
@@ -616,7 +715,7 @@ struct InterCodeNode* translate_ExtDef(struct Node* root) {
 
 			return concat(2, code1, code2);
 		}
-		default: printf("3\n");return NULL;
+		default: return NULL;
 	}
 }
 
@@ -630,7 +729,7 @@ struct InterCodeNode* translate_ExtDecList(struct Node* root) {
 		struct Node* extdeclist = vardec->nextSibling->nextSibling;
 		struct InterCodeNode* code2 = translate_ExtDecList(extdeclist);
 
-		return concat(2, code, code2);
+		code = concat(2, code, code2);
 	}
 	return code;
 }
@@ -640,7 +739,7 @@ struct InterCodeNode* translate_FunDec(struct Node* root) {
 	struct Node* id = root->child;
 	char* function = id->lexeme;
 
-	struct InterCodeNode* code1 = newInterCodeNode(FUNCTION, NULL, NULL, NULL, function);
+	struct InterCodeNode* code1 = newInterCodeNode(FUNCTION, NULL, NULL, NULL, function,0);
 
 	if(root->rule == FunDec__ID_LP_VarList_RP) {
 		struct Node* varlist = id->nextSibling->nextSibling;
@@ -685,7 +784,7 @@ struct InterCodeNode* translate_ParamDec(struct Node* root) {
 
 	struct Symbol* sym = lookupVariable(vardec->lexeme);
 	Operand var = newOperand(VARIABLE, sym->var_no);
-	struct InterCodeNode* code2 = newInterCodeNode(PARAM, var, NULL, NULL, NULL);
+	struct InterCodeNode* code2 = newInterCodeNode(PARAM, var, NULL, NULL, NULL,0);
 
 	return concat(2, code1, code2);
 }
@@ -697,7 +796,7 @@ void generateIR(struct Node* root, char* filename) {
 	icHead = translate_ExtDefList(root->child);
 
 #ifdef DEBUG
-	//outputIR(icHead);
+	outputIR(icHead);
 #endif
 	outputIR2File(filename);
 }
