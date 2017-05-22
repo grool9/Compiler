@@ -162,7 +162,9 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 		case Exp__ID:{
 			struct Node* id = root->child;
 			struct Symbol* sym = lookupVariable(id->lexeme);
-			Operand right = newOperand(VARIABLE, sym->var_no);
+			Operand right = NULL;
+			if(sym->type->kind == _STRUCTURE_)right = newOperand(ADDRESS, sym->var_no);
+			else right = newOperand(VARIABLE, sym->var_no);
 
 			if(place == NULL) return NULL;
 
@@ -194,20 +196,13 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 				assert(t->kind == _STRUCTURE_);
 				FieldList structure = t->u.structure;
 
-				int all_count = 0;
-				FieldList p = structure;
-				for(; p != NULL; p = p->tail, all_count++);
-
-				int size = all_count * 4;
-				struct InterCodeNode* code1 = newInterCodeNode(DEC, NULL, NULL, NULL, NULL, size);
-
+				struct InterCodeNode* code1 = NULL;
 				struct InterCodeNode* code2 = NULL;
-				struct InterCodeNode* code3 = NULL;
 				// find the field
 				struct Node* field = variable->nextSibling->nextSibling;
 				char* name = field->lexeme;
 				int count = 0;
-				p = structure;
+				FieldList p = structure;
 				for(; p != NULL; p = p->tail, count++) {
 					if(strcmp(name, p->name) == 0)break;
 				}
@@ -215,17 +210,17 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 				Operand temp1 = new_temp();
 				Operand v = newOperand(ADDRESS, var->u.var_no);
 				if(count == 0) {
-					code2 = newInterCodeNode(ASSIGN, temp1, v, NULL, NULL, 0);
+					code1 = newInterCodeNode(ASSIGN, temp1, v, NULL, NULL, 0);
 				}
 				else {
 					Operand constantsize = newOperand(CONSTANT, count*4);
-					code2 = newInterCodeNode(ADD, temp1, v, constantsize, NULL, 0);
+					code1 = newInterCodeNode(ADD, temp1, v, constantsize, NULL, 0);
 				}
 
 				Operand place = newOperand(TPOINTER, temp1->u.var_no);
-				code3 = translate_Exp(exp2, place);
+				code2 = translate_Exp(exp2, place);
 
-				code = concat(3, code1, code2, code3);
+				code = concat(2, code1, code2);
 			}
 
 			return code;
@@ -310,16 +305,14 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 			
 			struct InterCodeNode* code1 = translate_Args(args, arg_list);
 
-			Operand first_arg = arg_list->next->op;
-			struct InterCodeNode* c1 = newInterCodeNode(WRITE, first_arg, NULL, NULL, NULL,0);
-			
+			struct InterCodeNode* c1 = newInterCodeNode(WRITE, arg_list->next->op, NULL, NULL, NULL,0);
 			if(strcmp(function, "write")==0) return concat(2, code1, c1);
 		
-			struct InterCodeNode* code2 = newInterCodeNode(ARG, first_arg, NULL, NULL, NULL,0);
-
-			struct OperandNode* cur = arg_list->next->next;
-			for(;cur != NULL; cur = cur->next) {
-				code2 = concat(2,code2, cur->op);
+			struct InterCodeNode* code2 = NULL;
+			struct OperandNode* cur = arg_list->next;
+			for(;cur != NULL; cur = cur->next) {//NEED TO MODIFY
+				struct InterCodeNode* c = newInterCodeNode(ARG, cur->op, NULL, NULL, NULL, 0);
+				code2 = concat(2,code2, c);
 			}
 			struct InterCodeNode* c2 = newInterCodeNode(CALL, place, NULL, NULL, function,0);
 			return concat(3, code1, code2, c2);
@@ -656,7 +649,20 @@ struct InterCodeNode* translate_Dec(struct Node* root) {
 	struct Symbol* sym = lookupVariable(vardec->lexeme);
 	Operand place = newOperand(VARIABLE, sym->var_no);
 
-	if(root->rule == Dec__VarDec_ASSIGNOP_Exp) {
+#ifdef DEBUG
+	//printType(sym->type);
+#endif
+	if(sym->type->kind == _STRUCTURE_){
+		FieldList structure = sym->type->u.structure;
+
+		int all_count = 0;
+		FieldList p = structure;
+		for(; p != NULL; p = p->tail, all_count++);
+		int size = all_count * 4;
+		struct InterCodeNode* code1 = newInterCodeNode(DEC, place, NULL, NULL, NULL, size);
+		code = concat(2, code, code1);
+	}
+	else if(root->rule == Dec__VarDec_ASSIGNOP_Exp) {
 		struct Node* exp = vardec->nextSibling->nextSibling;
 		struct InterCodeNode* code2 = translate_Exp(exp, place);
 		code = concat(2, code, code2);
@@ -796,7 +802,7 @@ void generateIR(struct Node* root, char* filename) {
 	icHead = translate_ExtDefList(root->child);
 
 #ifdef DEBUG
-	outputIR(icHead);
+	//outputIR(icHead);
 #endif
 	outputIR2File(filename);
 }

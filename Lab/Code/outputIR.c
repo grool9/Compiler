@@ -116,8 +116,14 @@ void outputIR2File(char* filename) {
 							printOp2File(p->code.u.sigop.op);
 							break;
 						}
+			case DEC: {
+						  fprintf(fp, "DEC ");
+						  printOp2File(p->code.u.decop.op);
+						  fprintf(fp, " %d", p->code.u.decop.size);
+						  break;
+					  }
 			default: {
-				printf("UNK operation!\n");
+				printf("outputIR2File UNK operation!\n");
 						}
 			}
 		fprintf(fp, "\n");	
@@ -245,7 +251,7 @@ void outputIR(struct InterCodeNode* head) {
 						  break;
 					  }
 			default: {
-				printf("UNK operation!\n");
+				printf("outputIR UNK operation!\n");
 						}
 			}
 		printf("\n");	
