@@ -243,6 +243,7 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 			if(root->rule == Exp__Exp_PLUS_Exp)code3 = newInterCodeNode(ADD, place, t1, t2, NULL,0);
 			else if(root->rule == Exp__Exp_MINUS_Exp)code3 = newInterCodeNode(SUB, place, t1, t2, NULL,0);
 			else if(root->rule == Exp__Exp_STAR_Exp)code3 = newInterCodeNode(MUL, place, t1, t2, NULL,0);
+
 			else code3 = newInterCodeNode(DIVIDE, place, t1, t2, NULL,0);
 #ifdef DEBUG
 	//printf("!!!!!!!exp binop\n");
@@ -363,9 +364,8 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 				Operand op1 = newOperand(VARIABLE, var_no);
 				Operand op2 = newOperand(CONSTANT, count * 4);
 				struct InterCodeNode* code1 = newInterCodeNode(ADD, t1, op1, op2, NULL,0);
-				Operand t2 = new_temp();
-				Operand op = newOperand(TPOINTER, t1->u.var_no);
-				struct InterCodeNode* code2 = newInterCodeNode(ASSIGN, t2, op, NULL, NULL,0);
+				Operand op = newOperand(TPOINTER, t1->u.var_no);//debuged ~
+				struct InterCodeNode* code2 = newInterCodeNode(ASSIGN, place, op, NULL, NULL,0);
 
 				code = concat(2, code1, code2);
 			}
@@ -476,6 +476,14 @@ struct InterCodeNode* translate_Stmt(struct Node* root) {
 struct InterCodeNode* translate_Cond(struct Node* root, Operand label_true, Operand label_false) {
 	if(root == NULL)return NULL;
 	switch(root->rule) {
+		case Exp__INT:{ // optimization
+			struct Node* intNode = root->child;
+			
+			if(intNode->value == 1) {
+				return newInterCodeNode(GOTO, label_true, NULL, NULL, NULL,0);
+			}
+			else return newInterCodeNode(GOTO, label_false, NULL, NULL, NULL, 0);
+		}
 		case Exp__Exp_RELOP_Exp:{
 			struct Node* exp1 = root->child;
 			struct Node* relop = exp1->nextSibling;
@@ -813,7 +821,9 @@ void generateIR(struct Node* root, char* filename) {
 	constant1 = newOperand(CONSTANT, 1);
 
 	icHead = translate_ExtDefList(root->child);
-
+	
+	optimize_control();
+	clean_temp_var();
 #ifdef DEBUG
 	//outputIR(icHead);
 #endif

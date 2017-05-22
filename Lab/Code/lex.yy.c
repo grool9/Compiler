@@ -2106,5 +2106,6 @@ void setVal(char* token, char* lexeme){
 
 	//lab3
 	yylval->isConstant = false;
+	if(strcmp(token, "INT") == 0)yylval->value = my_atoi(lexeme);
 }
 
