@@ -169,37 +169,64 @@ void optimize_control() {
 
 /* 优化临时变量
  */
+void replaceTemp(struct InterCodeNode* p, int temp_no, Operand toChange){
+	int kind = p->code.kind;
+	if(kind == ASSIGN) {
+		Operand left = p->code.u.assign.left;
+		Operand right = p->code.u.assign.right;
+		if(left->kind == TEMP && left->u.var_no == temp_no)p->code.u.assign.left = toChange;
+		if(right->kind == TEMP && right->u.var_no == temp_no)p->code.u.assign.right = toChange;
+	}
+	else if(kind == ADD || kind == SUB || kind == MUL || kind == DIVIDE) {
+		Operand result = p->code.u.binop.result;
+		Operand op1 = p->code.u.binop.op1;
+		Operand op2 = p->code.u.binop.op2;
+		if(result->kind == TEMP && result->u.var_no == temp_no)p->code.u.binop.result = toChange;
+		if(op1->kind == TEMP && op1->u.var_no == temp_no)p->code.u.binop.op1 = toChange;
+		if(op2->kind == TEMP && op2->u.var_no == temp_no)p->code.u.binop.op2 = toChange;
+	}
+	else if(kind == LABELOP || kind == GOTO || kind == RETURNOP || kind == READ || kind == WRITE || kind == ARG || kind == PARAM) {
+		Operand op = p->code.u.sigop.op;
+		if(op->kind == TEMP && op->u.var_no == temp_no)p->code.u.sigop.op = toChange;
+	}
+	else if(kind == IFOP) {
+		Operand op1 = p->code.u.ifop.op1;
+		Operand op2 = p->code.u.ifop.op2;
+		if(op1->kind == TEMP && op1->u.var_no == temp_no)p->code.u.ifop.op1 = toChange;
+		if(op2->kind == TEMP && op2->u.var_no == temp_no)p->code.u.ifop.op2 = toChange;
+	}
+	else if(kind == CALL) {
+		Operand op = p->code.u.callop.result;
+		if(op->kind == TEMP && op->u.var_no == temp_no)p->code.u.callop.result = toChange;
+	}
+	else if(kind == DEC) {
+		Operand op = p->code.u.decop.op;
+		if(op->kind == TEMP && op->u.var_no == temp_no)p->code.u.decop.op = toChange;
+	}
+}
 void clean_temp_var() {
+	struct {
+		int temp_no;
+		Operand toChange;
+	}table[1000];
+	int index = 0;
+	int num = 0;
+
 	struct InterCodeNode* pre = NULL;
 	struct InterCodeNode* p = icHead;
-	while(p!= NULL) {
-		bool todelete = false;
+	while(p!=NULL) {
 		if(p->code.kind == ASSIGN && p->code.u.assign.left->kind == TEMP) {
-			Operand temp = p->code.u.assign.left;
-			Operand right = p->code.u.assign.right;
+			table[index].temp_no = p->code.u.assign.left->u.var_no;
+			table[index].toChange = p->code.u.assign.right;
+			index = (index+1) % 1000;
+			if(num<1000)num++;
 
-			if(p->next != NULL) {
-				struct InterCodeNode* pn = p->next;
-				OperationKind kind = pn->code.kind;
-				if(kind == ASSIGN) {
-					if(pn->code.u.assign.left == temp) {
-						pn->code.u.assign.left = right;
-						todelete = true;
-					}
-					if(pn->code.u.assign.right == temp){
-						pn->code.u.assign.right = right;
-						todelete = true;
-					}
-				}
-			}
-		}
-			
-		if(todelete){
+			// delete this code
 			if(pre == NULL) {
 				p = p->next;
 				icHead = p;
 			}
-			else {
+			else{
 				p = p->next;
 				pre->next = p;
 				p->prev = pre;
@@ -208,6 +235,15 @@ void clean_temp_var() {
 		else {
 			pre = p;
 			p = p->next;
+		}
+	}
+
+	// replace the temp
+	p = icHead;
+	for(; p!=NULL;p=p->next) {
+		int i = 0;
+		for(;i<num;i++) {
+			replaceTemp(p, table[i].temp_no, table[i].toChange);
 		}
 	}
 }

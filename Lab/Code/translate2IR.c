@@ -181,6 +181,7 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 		
 			struct InterCodeNode* code = NULL;
 			if(exp1->rule == Exp__ID) {
+				// OPTIMIZATION
 				Operand t1 = new_temp();
 				struct InterCodeNode* code1 = translate_Exp(exp2, t1);
 
@@ -222,7 +223,10 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 
 				code = concat(2, code1, code2);
 			}
-
+			else {
+				printf("Cannot translate: Code contains variables of multi-dimensional array type or parameters of array type.\n");
+				exit(0);
+			}
 			return code;
 		}
 		case Exp__Exp_PLUS_Exp:
