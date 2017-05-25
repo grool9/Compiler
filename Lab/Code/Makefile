@@ -36,10 +36,10 @@ syntax-c: $(YFILE)
 test:
 	./parser ../Test/test.cmm ../Test/out.ir
 testall:
-	./parser ../Test/test1.cmm ../Test/out1.ir
-	./parser ../Test/test2.cmm ../Test/out2.ir
-	./parser ../Test/test3.cmm ../Test/out3.ir
-	./parser ../Test/test4.cmm ../Test/out4.ir
+	./parser ../Test/test1.cmm ../Test/out5.ir
+	./parser ../Test/test2.cmm ../Test/out6.ir
+	./parser ../Test/test3.cmm ../Test/out7.ir
+	./parser ../Test/test4.cmm ../Test/out8.ir
 testa:
 	./parser ../Test/a1.c ../Test/a1_out.ir
 	./parser ../Test/a2.c ../Test/a2_out.ir

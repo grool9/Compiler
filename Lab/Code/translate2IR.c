@@ -182,14 +182,14 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 			struct InterCodeNode* code = NULL;
 			if(exp1->rule == Exp__ID) {
 				// OPTIMIZATION
-				Operand t1 = new_temp();
-				struct InterCodeNode* code1 = translate_Exp(exp2, t1);
+				//Operand t1 = new_temp();
+				struct InterCodeNode* code1 = translate_Exp(exp2, var);
 
-				struct InterCodeNode* c1 = newInterCodeNode(ASSIGN, var ,t1, NULL, NULL,0);
-				struct InterCodeNode* c2 = NULL;
-				if(place != NULL)c2 = newInterCodeNode(ASSIGN, place, var, NULL, NULL,0);
+				//struct InterCodeNode* c1 = newInterCodeNode(ASSIGN, var ,t1, NULL, NULL,0);
+				struct InterCodeNode* code2 = NULL;
+				if(place != NULL)code2 = newInterCodeNode(ASSIGN, place, var, NULL, NULL,0);
 
-				struct InterCodeNode* code2 = concat(2, c1, c2);
+				//struct InterCodeNode* code2 = concat(2, c1, c2);
 				code = concat(2, code1, code2);
 			}
 			else if(exp1->rule == Exp__Exp_DOT_ID) {
@@ -828,8 +828,11 @@ void generateIR(struct Node* root, char* filename) {
 	
 	optimize_control();
 	clean_temp_var();
+	optimize_algebra();
+
+	remove_equals();
 #ifdef DEBUG
-	//outputIR(icHead);
+	outputIR(icHead);
 #endif
 	outputIR2File(filename);
 }

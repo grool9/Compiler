@@ -120,17 +120,19 @@ void optimize_control() {
 						else p->code.u.ifop.relop = "==";
 
 						// change label no
-						p->code.u.ifop.label->u.var_no = label2;
+						// cannot change directly!!!!!!!
+						//p->code.u.ifop.label->u.var_no = label2;
+						p->code.u.ifop.label = newOperand(LABEL, label2);
 
-						// delete the 2 codes
-						p->next = pnn->next;
-						if(pnn->next != NULL)pnn->next->prev = p;
+						// delete the goto code -- pn
+						p->next = pnn;
+						pnn->prev = p;
 					}
 				
 					else if(label2 == label3) {
-						// delete the 2 codes
-						p->next = pnn->next;
-						if(pnn->next != NULL)pnn->next->prev = p;
+						// delete the goto code
+						p->next = pnn;
+						pnn->prev = p;
 					}
 				}
 			}
@@ -144,15 +146,15 @@ void optimize_control() {
 					int label2 = pn->code.u.sigop.op->u.var_no;
 
 					if(label1 == label2) {
-						//delete this 2 codes
+						//delete the goto code
 						if(pre == NULL) {
-							p = pn->next;
+							p = pn;
 							icHead = p;
 						}
 						else {
-							p = pn->next;
+							p = pn;
 							pre->next = p;
-							pn->next->prev = pre;
+							pn->prev = pre;
 						}
 						autoAdd = false;
 					}
@@ -244,6 +246,130 @@ void clean_temp_var() {
 		int i = 0;
 		for(;i<num;i++) {
 			replaceTemp(p, table[i].temp_no, table[i].toChange);
+		}
+	}
+}
+
+void optimize_algebra() {
+	struct InterCodeNode* p = icHead;
+	for(; p != NULL; p = p->next) {
+		OperationKind kind = p->code.kind;
+		switch(kind) {
+			case ADD: {
+							 Operand result = p->code.u.binop.result;
+							 Operand op1 = p->code.u.binop.op1;
+							 Operand op2 = p->code.u.binop.op2;
+
+							 if(op1->kind == CONSTANT && op1->u.value == 0) {
+								 p->code.kind = ASSIGN;
+								 p->code.u.assign.left = result;
+								 p->code.u.assign.right = op2;
+							 }
+							 else if(op2->kind == CONSTANT && op2->u.value == 0) {
+								 p->code.kind = ASSIGN;
+								 p->code.u.assign.left = result;
+								 p->code.u.assign.right = op1;
+							 }
+							 break;
+					  }
+			case SUB:{
+							 Operand result = p->code.u.binop.result;
+							 Operand op1 = p->code.u.binop.op1;
+							 Operand op2 = p->code.u.binop.op2;
+
+							 if(op2->kind == CONSTANT && op2->u.value == 0) {
+								 p->code.kind = ASSIGN;
+								 p->code.u.assign.left = result;
+								 p->code.u.assign.right = op1;
+							 }
+							 break;
+					 }
+			case MUL:{
+						 Operand result = p->code.u.binop.result;
+						 Operand op1 = p->code.u.binop.op1;
+						 Operand op2 = p->code.u.binop.op2;
+						
+						 if((op1->kind == CONSTANT && op1->u.value == 0) || (op2->kind == CONSTANT && op2->u.value == 0)) {
+							p->code.kind = ASSIGN;
+							p->code.u.assign.left = result;
+							p->code.u.assign.right = newOperand(CONSTANT, 0);
+							}
+						 else if(op1->kind == CONSTANT) {
+							 if(op1->u.value == 1) {
+								 p->code.kind = ASSIGN;
+								 p->code.u.assign.left = result;
+								 p->code.u.assign.right = op2;
+							 }
+							 else if(op1->u.value == 2) {
+								 p->code.kind = ADD;
+								 p->code.u.binop.op1 = op2;
+							 }
+						 }
+
+						 else if(op2->kind == CONSTANT) {
+							if(op2->u.value == 1) {
+								 p->code.kind = ASSIGN;
+								 p->code.u.assign.left = result;
+								 p->code.u.assign.right = op1;
+							 }
+							 else if(op2->u.value == 2) {
+								 p->code.kind = ADD;
+								 p->code.u.binop.op2 = op1;
+							 }
+						 }
+						 break;
+					 }
+		case DIVIDE: {
+						Operand result = p->code.u.binop.result;
+						 Operand op1 = p->code.u.binop.op1;
+						 Operand op2 = p->code.u.binop.op2;
+						
+						 if((op1->kind == CONSTANT && op1->u.value == 0)) {
+							p->code.kind = ASSIGN;
+							p->code.u.assign.left = result;
+							p->code.u.assign.right = newOperand(CONSTANT, 0);
+							}
+
+						 else if(op2->kind == CONSTANT) {
+							if(op2->u.value == 1) {
+								 p->code.kind = ASSIGN;
+								 p->code.u.assign.left = result;
+								 p->code.u.assign.right = op1;
+							 }
+						 }
+						 break;
+					 }
+		}
+		
+	}
+}
+
+void remove_equals() {
+	struct InterCodeNode* pre = NULL;
+	struct InterCodeNode* p = icHead;
+	while(p != NULL ) {
+		bool autoAdd = true;
+		if(p->code.kind == ASSIGN) {
+			Operand left = p->code.u.assign.left;
+			Operand right = p->code.u.assign.right;
+
+			if(left->kind == right->kind && left->u.value == right->u.value) {
+				// delete this code
+				if(pre == NULL) {
+					p = p->next;
+					icHead = p;
+				}
+				else {
+					p = p->next;
+					pre->next = p;
+					if(p != NULL) p->prev = pre;
+				}
+				autoAdd = false;
+			}
+		}
+		if(autoAdd) {
+			pre = p;
+			p = p->next;
 		}
 	}
 }

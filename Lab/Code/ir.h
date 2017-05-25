@@ -44,6 +44,8 @@ struct InterCodeNode {
 
 extern struct InterCodeNode* icHead;
 
+Operand newOperand(OperandKind kind, int val);
+
 void generateIR(struct Node* root, char* filename);
 void outputIR2File(char* filename);
 
