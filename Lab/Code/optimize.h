@@ -9,5 +9,7 @@ void optimize_control();
 void clean_temp_var();
 
 void optimize_algebra();
-void remove_equals();
+void remove_equation();
+
+void remove_extralabel();
 #endif

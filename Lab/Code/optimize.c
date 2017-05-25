@@ -344,7 +344,7 @@ void optimize_algebra() {
 	}
 }
 
-void remove_equals() {
+void remove_equation() {
 	struct InterCodeNode* pre = NULL;
 	struct InterCodeNode* p = icHead;
 	while(p != NULL ) {
@@ -368,6 +368,141 @@ void remove_equals() {
 			}
 		}
 		if(autoAdd) {
+			pre = p;
+			p = p->next;
+		}
+	}
+}
+
+// remove useless LABEL
+void remove_extralabel() {
+	struct{
+		int useless;
+		int jumpto;
+	} table[1000];
+	int index = 0;
+	int num = 0;
+
+	int used[1000];
+	int used_index = 0;
+	int used_num = 0;
+
+	// find the LABEL GOTO
+	struct InterCodeNode* p = icHead;
+	for( ;p != NULL; p = p->next) {
+		if(p->code.kind == LABELOP && p->next != NULL){
+			struct InterCodeNode* pn = p->next;
+
+			int label1 = p->code.u.sigop.op->u.var_no;
+			if(pn->code.kind == GOTO || pn->code.kind == LABELOP) {
+				int label2 = pn->code.u.sigop.op->u.var_no;
+
+				//update
+				int i = 0;
+				for(;i<num;i++) {
+					if(table[i].jumpto == label1)table[i].jumpto = label2;
+				}
+
+				table[index].useless = label1;
+				table[index].jumpto = label2;
+
+				index = (index + 1)%1000;
+				if(num<1000)num++;
+			}
+		}
+	}		
+#ifdef DEBUG
+	printf("table:\n");
+	int i = 0;
+	for(;i<num;i++){
+		printf("%d	%d\n", table[i].useless, table[i].jumpto);
+	}
+#endif
+
+	// change the label no
+	p = icHead;
+	for(; p != NULL; p = p->next ) {
+		// goto
+		if(p->code.kind == GOTO || p->code.kind == IFOP) {
+			int label;
+			if(p->code.kind == GOTO) {
+				label = p->code.u.sigop.op->u.var_no;
+
+				// check the table
+				int i = 0;
+				for(;i<num;i++) {
+					if( label == table[i].useless) break;
+				}
+				if(i < num) {
+					// substitute
+					p->code.u.sigop.op = newOperand(LABEL, table[i].jumpto);
+				}
+
+				label = p->code.u.sigop.op->u.var_no;
+			}
+			else {
+				label = p->code.u.ifop.label->u.var_no;
+
+				// check the table
+				int i = 0;
+				for(;i<num;i++) {
+					if( label == table[i].useless) break;
+				}
+				if(i < num) {
+					// substitute
+					p->code.u.ifop.label = newOperand(LABEL, table[i].jumpto);
+				}
+
+				label = p->code.u.ifop.label->u.var_no;
+			}
+			// add to used
+			int i = 0;
+			for(; i<used_num;i++) {
+				if(used[i] == label) break;
+			}
+			if(i == used_num) {
+				used[used_index] = label;
+				used_index = (used_index+1)%1000;
+				if(used_num<1000)used_num++;
+			}
+
+		}
+	}
+#ifdef DEBUG
+	printf("used table:\n");
+	i = 0;
+	for(;i<used_num;i++){
+		printf("%d\n", used[i]);
+	}
+#endif
+	// delete useless LABEL
+	p = icHead;
+	struct InterCodeNode* pre = NULL;
+	while(p!=NULL) {
+		if(p->code.kind ==LABELOP) {
+			int label = p->code.u.sigop.op->u.var_no;
+			int i = 0;
+			for(;i<used_num;i++){
+				if(label == used[i])break;
+			}
+			if(i == used_num) {
+				//delete this code
+				if(pre == NULL) {
+					p = p->next;
+					icHead = p;
+				}
+				else{
+					p = p->next;
+					pre->next = p;
+					p->prev = pre;
+				}
+			}
+			else {
+				pre = p;
+				p = p->next;
+			}
+		}
+		else {
 			pre = p;
 			p = p->next;
 		}

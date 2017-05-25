@@ -124,7 +124,7 @@ struct InterCodeNode* concat(int number, ...) {
 	return head;
 }
 
-struct OperandNode* arg_concat(Operand t, struct OperandNode* arg_list) {
+void arg_concat(Operand t, struct OperandNode* arg_list) {
 	struct OperandNode* temp = (struct OperandNode*)malloc(sizeof(struct OperandNode));
 	temp->op = t;
 
@@ -134,7 +134,6 @@ struct OperandNode* arg_concat(Operand t, struct OperandNode* arg_list) {
 
 	first->next = temp;
 	temp->next = second;
-	return temp;
 }
 
 /*
@@ -317,7 +316,8 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 			// write
 			struct InterCodeNode* c1 = newInterCodeNode(WRITE, arg_list->next->op, NULL, NULL, NULL,0);
 			if(strcmp(function, "write")==0) return concat(2, code1, c1);
-			// not write function	
+			
+			// other functions	
 			struct InterCodeNode* code2 = NULL;
 			struct OperandNode* cur = arg_list->next;
 			for(;cur != NULL; cur = cur->next) {
@@ -468,7 +468,7 @@ struct InterCodeNode* translate_Stmt(struct Node* root) {
 			struct InterCodeNode* c3 = newInterCodeNode(GOTO, label1, NULL, NULL, NULL,0);
 			struct InterCodeNode* c4 = newInterCodeNode(LABELOP, label3, NULL, NULL, NULL,0);
 			struct InterCodeNode* code = concat(6 ,c1, code1, c2, code2, c3, c4);
-			return concat(6 ,c1, code1, c2, code2, c3, c4);
+			return code;
 			}
 		default: {
 					 printf("STMT UNK!\n");
@@ -560,7 +560,7 @@ struct InterCodeNode* translate_Args(struct Node* root, struct OperandNode* arg_
 			Operand t1 = new_temp();
 			struct InterCodeNode* code1 = translate_Exp(exp, t1);
 
-			arg_list = arg_concat(t1, arg_list);
+			arg_concat(t1, arg_list);
 			return code1;
 		}
 		case Args__Exp_COMMA_Args: {
@@ -569,7 +569,8 @@ struct InterCodeNode* translate_Args(struct Node* root, struct OperandNode* arg_
 
 			Operand t1 = new_temp();
 			struct InterCodeNode* code1 = translate_Exp(exp, t1);
-			arg_list = arg_concat(t1, arg_list);
+			arg_concat(t1, arg_list);
+
 			struct InterCodeNode* code2 = translate_Args(args1, arg_list);
 
 			return concat(2, code1, code2);
@@ -825,14 +826,16 @@ void generateIR(struct Node* root, char* filename) {
 	constant1 = newOperand(CONSTANT, 1);
 
 	icHead = translate_ExtDefList(root->child);
-	
-	optimize_control();
+
 	clean_temp_var();
+	optimize_control();
+	remove_extralabel();
 	optimize_algebra();
 
-	remove_equals();
+	remove_equation();
+
 #ifdef DEBUG
-	outputIR(icHead);
+	//outputIR(icHead);
 #endif
 	outputIR2File(filename);
 }
