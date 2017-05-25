@@ -2,6 +2,14 @@
 
 #define DEBUG
 
+// block
+bool isHeadCode(struct InterCodeNode* code) {
+	if(code->prev == NULL)return true;
+	if(code->code.kind == LABELOP)return true;
+	if(code->prev->code.kind == GOTO || code->prev->code.kind == IFOP)return true;
+	return false;
+}
+
 void del_code(struct InterCodeNode* code) {
 	if(code == NULL)return;
 
@@ -173,100 +181,6 @@ void optimize_control() {
 	}
 }
 
-/* 优化临时变量
- */
-void replaceTemp(struct InterCodeNode* p, int temp_no, Operand toChange){
-	int kind = p->code.kind;
-	if(kind == ASSIGN) {
-		Operand left = p->code.u.assign.left;
-		Operand right = p->code.u.assign.right;
-		if(left->kind == TEMP && left->u.var_no == temp_no)p->code.u.assign.left = toChange;
-		if(right->kind == TEMP && right->u.var_no == temp_no)p->code.u.assign.right = toChange;
-	}
-	else if(kind == ADD || kind == SUB || kind == MUL || kind == DIVIDE) {
-		Operand result = p->code.u.binop.result;
-		Operand op1 = p->code.u.binop.op1;
-		Operand op2 = p->code.u.binop.op2;
-		if(result->kind == TEMP && result->u.var_no == temp_no)p->code.u.binop.result = toChange;
-		if(op1->kind == TEMP && op1->u.var_no == temp_no)p->code.u.binop.op1 = toChange;
-		if(op2->kind == TEMP && op2->u.var_no == temp_no)p->code.u.binop.op2 = toChange;
-	}
-	else if(kind == LABELOP || kind == GOTO || kind == RETURNOP || kind == READ || kind == WRITE || kind == ARG || kind == PARAM) {
-		Operand op = p->code.u.sigop.op;
-		if(op->kind == TEMP && op->u.var_no == temp_no)p->code.u.sigop.op = toChange;
-	}
-	else if(kind == IFOP) {
-		Operand op1 = p->code.u.ifop.op1;
-		Operand op2 = p->code.u.ifop.op2;
-		if(op1->kind == TEMP && op1->u.var_no == temp_no)p->code.u.ifop.op1 = toChange;
-		if(op2->kind == TEMP && op2->u.var_no == temp_no)p->code.u.ifop.op2 = toChange;
-	}
-	else if(kind == CALL) {
-		Operand op = p->code.u.callop.result;
-		if(op->kind == TEMP && op->u.var_no == temp_no)p->code.u.callop.result = toChange;
-	}
-	else if(kind == DEC) {
-		Operand op = p->code.u.decop.op;
-		if(op->kind == TEMP && op->u.var_no == temp_no)p->code.u.decop.op = toChange;
-	}
-}
-
-void replaceTemps(struct InterCodeNode* s, struct InterCodeNode* t, int temp_no, Operand toChange) {
-	struct InterCodeNode* p = s;
-	for(; p != t;p = p->next) {
-		replaceTemp(p, temp_no, toChange);
-	}
-}
-
-void clean_temp_var() {
-	struct {
-		int temp_no;
-		Operand toChange;
-	}table[1000];
-	int index = 0;
-	int num = 0;
-
-	struct InterCodeNode* start = icHead;
-	struct InterCodeNode* p = icHead;
-	while(p!=NULL) {
-		if(p->code.kind == ASSIGN && p->code.u.assign.left->kind == TEMP) {
-			int temp_no = p->code.u.assign.left->u.var_no;
-			Operand toChange = p->code.u.assign.right;
-			//find
-			int i = 0;
-			for(;i<num;i++) {
-				if(table[i].temp_no == temp_no)break;
-			}
-			if(i < num) {
-				replaceTemps(start, p, temp_no, table[i].toChange);
-				table[i].toChange = toChange;
-				start = p->next;
-			}
-			else {
-				table[index].temp_no = temp_no;
-				table[index].toChange = toChange;
-				index = (index+1) % 1000;
-				if(num<1000)num++;
-			}
-			// delete this code
-			struct InterCodeNode* d = p;
-			p = p->next;
-			del_code(d);
-		}
-		else{
-			p = p->next;
-		}
-	}
-
-	// replace the temp
-	p = icHead;
-	for(; p!=NULL;p=p->next) {
-		int i = 0;
-		for(;i<num;i++) {
-			replaceTemp(p, table[i].temp_no, table[i].toChange);
-		}
-	}
-}
 
 void optimize_algebra() {
 	struct InterCodeNode* p = icHead;

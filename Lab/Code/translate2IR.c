@@ -136,6 +136,17 @@ void arg_concat(Operand t, struct OperandNode* arg_list) {
 	temp->next = second;
 }
 
+Operand clean_temp(struct InterCodeNode* p) {
+	int count = 0;
+	struct InterCodeNode* temp = p;
+	for(;temp!=NULL;temp = temp->next,count++);
+
+	if(count == 1 && p->code.kind == ASSIGN) {
+		return p->code.u.assign.right;
+	}
+	return NULL;//不能换
+}
+
 /*
  * translate functions
  */
@@ -181,14 +192,11 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 			struct InterCodeNode* code = NULL;
 			if(exp1->rule == Exp__ID) {
 				// OPTIMIZATION
-				//Operand t1 = new_temp();
 				struct InterCodeNode* code1 = translate_Exp(exp2, var);
 
-				//struct InterCodeNode* c1 = newInterCodeNode(ASSIGN, var ,t1, NULL, NULL,0);
 				struct InterCodeNode* code2 = NULL;
 				if(place != NULL)code2 = newInterCodeNode(ASSIGN, place, var, NULL, NULL,0);
 
-				//struct InterCodeNode* code2 = concat(2, c1, c2);
 				code = concat(2, code1, code2);
 			}
 			else if(exp1->rule == Exp__Exp_DOT_ID) {
@@ -242,12 +250,22 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 			struct InterCodeNode* code1 = translate_Exp(exp1, t1);
 			struct InterCodeNode* code2 = translate_Exp(exp2, t2);
 			
-			struct InterCodeNode* code3 = NULL;
-			if(root->rule == Exp__Exp_PLUS_Exp)code3 = newInterCodeNode(ADD, place, t1, t2, NULL,0);
-			else if(root->rule == Exp__Exp_MINUS_Exp)code3 = newInterCodeNode(SUB, place, t1, t2, NULL,0);
-			else if(root->rule == Exp__Exp_STAR_Exp)code3 = newInterCodeNode(MUL, place, t1, t2, NULL,0);
+			// OPTIMIZATION
+			Operand v1 = clean_temp(code1);
+			Operand v2 = clean_temp(code2);
 
-			else code3 = newInterCodeNode(DIVIDE, place, t1, t2, NULL,0);
+			if(v1 == NULL) v1 = t1;
+			else code1 = NULL;
+
+			if(v2 == NULL) v2 = t2;
+			else code2 = NULL;
+
+			struct InterCodeNode* code3 = NULL;
+			if(root->rule == Exp__Exp_PLUS_Exp)code3 = newInterCodeNode(ADD, place, v1, v2, NULL,0);
+			else if(root->rule == Exp__Exp_MINUS_Exp)code3 = newInterCodeNode(SUB, place, v1, v2, NULL,0);
+			else if(root->rule == Exp__Exp_STAR_Exp)code3 = newInterCodeNode(MUL, place, v1, v2, NULL,0);
+
+			else code3 = newInterCodeNode(DIVIDE, place, v1, v2, NULL,0);
 #ifdef DEBUG
 	//printf("!!!!!!!exp binop\n");
 	//outputIR(code1);
@@ -257,13 +275,17 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 		}
 		case Exp__MINUS_Exp:{
 			if(place == NULL) return NULL;
-
 			struct Node* exp1 = root->child->nextSibling;
 
 			Operand t1 = new_temp();
-
 			struct InterCodeNode* code1 = translate_Exp(exp1, t1);	
-			struct InterCodeNode* code2 = code2 = newInterCodeNode(SUB, place, constant0, t1, NULL,0);
+
+			// OPTIMIZATION
+			Operand v1 = clean_temp(code1);
+			if(v1 == NULL) v1 = t1;
+			else code1 = NULL;
+
+			struct InterCodeNode* code2 = newInterCodeNode(SUB, place, constant0, v1, NULL,0);
 
 			return concat(2, code1, code2);
 		}
@@ -400,11 +422,13 @@ struct InterCodeNode* translate_Stmt(struct Node* root) {
 
 			Operand t1 = new_temp();
 			struct InterCodeNode* code1 = translate_Exp(exp, t1);
-#ifdef DEBUG
-	//printf("`````return exp;\n");
-	//outputIR(code1);
-#endif
-			struct InterCodeNode* code2 = newInterCodeNode(RETURNOP, t1, NULL, NULL ,NULL,0);
+
+			//OPTIMIZATION
+			Operand v1 = clean_temp(code1);
+			if(v1 == NULL) v1 = t1;
+			else code1 = NULL;
+
+			struct InterCodeNode* code2 = newInterCodeNode(RETURNOP, v1, NULL, NULL ,NULL,0);
 			return concat(2, code1, code2);
 		}
 		case Stmt__IF_LP_Exp_RP_Stmt: {
@@ -498,6 +522,15 @@ struct InterCodeNode* translate_Cond(struct Node* root, Operand label_true, Oper
 			struct InterCodeNode* code1 = translate_Exp(exp1, t1);
 			struct InterCodeNode* code2 = translate_Exp(exp2, t2);
 
+			//OPTIMIZATION
+			Operand v1 = clean_temp(code1);
+			Operand v2 = clean_temp(code2);
+
+			if(v1 == NULL) v1 = t1;
+			else code1 = NULL;
+
+			if(v2 == NULL) v2 = t2;
+			else code2 = NULL;
 #ifdef DEBUG
 	//printf("~~~exp_relop_exp\n");
 	//outputIR(code1);
@@ -505,7 +538,7 @@ struct InterCodeNode* translate_Cond(struct Node* root, Operand label_true, Oper
 	//exit(0);
 #endif
 			char* op = relop->lexeme;
-			struct InterCodeNode* code3 = newInterCodeNode(IFOP, t1, t2, label_true, op,0);
+			struct InterCodeNode* code3 = newInterCodeNode(IFOP, v1, v2, label_true, op,0);
 			struct InterCodeNode* code4 = newInterCodeNode(GOTO, label_false, NULL, NULL ,NULL,0);
 
 			struct InterCodeNode* code = concat(4, code1, code2, code3, code4);
@@ -543,7 +576,13 @@ struct InterCodeNode* translate_Cond(struct Node* root, Operand label_true, Oper
 		default: {
 					Operand t1 = new_temp();
 					struct InterCodeNode* code1 = translate_Exp(root, t1);
-					struct InterCodeNode* code2 = newInterCodeNode(IFOP, t1, constant0, label_true, "!=",0);
+
+					// OPTIMIZATION
+					Operand v1 = clean_temp(code1);
+					if(v1 == NULL) v1 = t1;
+					else code1 = NULL;
+
+					struct InterCodeNode* code2 = newInterCodeNode(IFOP, v1, constant0, label_true, "!=",0);
 					struct InterCodeNode* code3 = newInterCodeNode(GOTO, label_false, NULL, NULL, NULL,0);
 
 					return concat(3, code1, code2, code3);
@@ -560,7 +599,12 @@ struct InterCodeNode* translate_Args(struct Node* root, struct OperandNode* arg_
 			Operand t1 = new_temp();
 			struct InterCodeNode* code1 = translate_Exp(exp, t1);
 
-			arg_concat(t1, arg_list);
+			//OPTIMIZATION
+			Operand v1 = clean_temp(code1);
+			if(v1 == NULL) v1 = t1;
+			else code1 = NULL;
+			
+			arg_concat(v1, arg_list);
 			return code1;
 		}
 		case Args__Exp_COMMA_Args: {
@@ -569,7 +613,13 @@ struct InterCodeNode* translate_Args(struct Node* root, struct OperandNode* arg_
 
 			Operand t1 = new_temp();
 			struct InterCodeNode* code1 = translate_Exp(exp, t1);
-			arg_concat(t1, arg_list);
+			
+			//OPTIMIZATION
+			Operand v1 = clean_temp(code1);
+			if(v1 == NULL) v1 = t1;
+			else code1 = NULL;
+			
+			arg_concat(v1, arg_list);
 
 			struct InterCodeNode* code2 = translate_Args(args1, arg_list);
 
@@ -827,7 +877,6 @@ void generateIR(struct Node* root, char* filename) {
 
 	icHead = translate_ExtDefList(root->child);
 
-	clean_temp_var();
 	optimize_control();
 	remove_extralabel();
 	optimize_algebra();
