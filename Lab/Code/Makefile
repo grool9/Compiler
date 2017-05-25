@@ -34,7 +34,7 @@ syntax-c: $(YFILE)
 # 定义的一些伪目标
 .PHONY: clean test
 test:
-	./parser ../Test/a-10 ../Test/out.ir
+	./parser ../Test/a-20 ../Test/out.ir
 testall:
 	./parser ../Test/test2-1.cmm ../Test/out2-1.ir
 	./parser ../Test/test2-2.cmm ../Test/out2-2.ir
@@ -55,6 +55,14 @@ testa:
 	./parser ../Test/a-11 ../Test/a11_out.ir
 	./parser ../Test/a-12 ../Test/a12_out.ir
 	./parser ../Test/a-13 ../Test/a13_out.ir
+	./parser ../Test/a-14 ../Test/a14_out.ir
+	./parser ../Test/a-15 ../Test/a15_out.ir
+	./parser ../Test/a-16 ../Test/a16_out.ir
+	./parser ../Test/a-17 ../Test/a17_out.ir
+	./parser ../Test/a-18 ../Test/a18_out.ir
+	./parser ../Test/a-19 ../Test/a19_out.ir
+	./parser ../Test/a-20 ../Test/a20_out.ir
+	./parser ../Test/a-21 ../Test/a21_out.ir
 testb:
 	./parser ../Test/b1.c ../Test/b1_out.ir
 	./parser ../Test/b2.c ../Test/b2_out.ir

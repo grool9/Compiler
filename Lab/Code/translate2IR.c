@@ -356,8 +356,15 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 		case Exp__Exp_DOT_ID: {
 			if(place == NULL) return NULL;
 
-			struct Node* id1 = root->child->child;// must be id !!!!!!!NEED
-			struct Node* id2 = root->child->nextSibling->nextSibling;
+			struct Node* exp = root->child;
+
+			Operand t1 = new_temp();
+			struct InterCodeNode* code = translate_Exp(exp, t1);
+
+			printType(exp->type);
+			exit(0);
+			//struct Node* id1 = root->child->child;// must be id !!!!!!!NEED
+/*			struct Node* id2 = root->child->nextSibling->nextSibling;
 			
 			struct Symbol* sym = lookupVariable(id1->lexeme);
 			Type type = sym->type;
@@ -399,7 +406,8 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 	//printf(",,,,,,DOT\n");
 	//outputIR(code);
 #endif
-			return code;
+			return code;*/
+			return NULL;
 		}
 		default: {
 			printf("UNK EXP!\n");
@@ -868,7 +876,7 @@ struct InterCodeNode* translate_ParamDec(struct Node* root) {
 void generateIR(struct Node* root, char* filename) {
 	// preprocessing
 	//outputTree(root, 0);
-	const_folding(root);
+	//const_folding(root);
 	//printf("----------------------------------\n");
 	//outputTree(root, 0);
 
