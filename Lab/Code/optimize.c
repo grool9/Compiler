@@ -2,6 +2,27 @@
 
 #define DEBUG
 
+void del_code(struct InterCodeNode* code) {
+	if(code == NULL)return;
+
+	struct InterCodeNode* d = code;
+	struct InterCodeNode* pre = code->prev;
+
+	code = code->next;
+	if(pre == NULL && code == NULL);
+	else if(pre == NULL) {
+		code->prev = NULL;
+	}
+	else if(code == NULL) {
+		pre->next = NULL;
+	}
+	else {
+		pre->next = code;
+		code->prev = pre;
+	}
+	free(d);
+}
+
 /* 常量合并的实现
  * merge the constant
  */
@@ -91,14 +112,11 @@ void const_folding(struct Node* node) {
 }
 
 /* 控制流语句优化
- * reduce operation GOTO and LABELOP
+ * reduce operation GOTO
  */
 void optimize_control() {
-	struct InterCodeNode* pre = NULL;
 	struct InterCodeNode* p = icHead;
-	while( p!= NULL) {
-		bool autoAdd = true;
-
+	for(;p!= NULL;p=p->next) {
 		if(p->code.kind == IFOP) {
 			if(p->next != NULL && p->next->next != NULL) {
 				struct InterCodeNode* pn = p->next;
@@ -125,14 +143,12 @@ void optimize_control() {
 						p->code.u.ifop.label = newOperand(LABEL, label2);
 
 						// delete the goto code -- pn
-						p->next = pnn;
-						pnn->prev = p;
+						del_code(pn);
 					}
 				
 					else if(label2 == label3) {
 						// delete the goto code
-						p->next = pnn;
-						pnn->prev = p;
+						del_code(pn);
 					}
 				}
 			}
@@ -147,25 +163,13 @@ void optimize_control() {
 
 					if(label1 == label2) {
 						//delete the goto code
-						if(pre == NULL) {
-							p = pn;
-							icHead = p;
-						}
-						else {
-							p = pn;
-							pre->next = p;
-							pn->prev = pre;
-						}
-						autoAdd = false;
+						del_code(p);
+						p = pn;
 					}
 				}
 			}
 		}
 
-		if(autoAdd) {
-			pre = p;
-			p = p->next;
-		}
 	}
 }
 
@@ -206,6 +210,14 @@ void replaceTemp(struct InterCodeNode* p, int temp_no, Operand toChange){
 		if(op->kind == TEMP && op->u.var_no == temp_no)p->code.u.decop.op = toChange;
 	}
 }
+
+void replaceTemps(struct InterCodeNode* s, struct InterCodeNode* t, int temp_no, Operand toChange) {
+	struct InterCodeNode* p = s;
+	for(; p != t;p = p->next) {
+		replaceTemp(p, temp_no, toChange);
+	}
+}
+
 void clean_temp_var() {
 	struct {
 		int temp_no;
@@ -214,28 +226,34 @@ void clean_temp_var() {
 	int index = 0;
 	int num = 0;
 
-	struct InterCodeNode* pre = NULL;
+	struct InterCodeNode* start = icHead;
 	struct InterCodeNode* p = icHead;
 	while(p!=NULL) {
 		if(p->code.kind == ASSIGN && p->code.u.assign.left->kind == TEMP) {
-			table[index].temp_no = p->code.u.assign.left->u.var_no;
-			table[index].toChange = p->code.u.assign.right;
-			index = (index+1) % 1000;
-			if(num<1000)num++;
-
+			int temp_no = p->code.u.assign.left->u.var_no;
+			Operand toChange = p->code.u.assign.right;
+			//find
+			int i = 0;
+			for(;i<num;i++) {
+				if(table[i].temp_no == temp_no)break;
+			}
+			if(i < num) {
+				replaceTemps(start, p, temp_no, table[i].toChange);
+				table[i].toChange = toChange;
+				start = p->next;
+			}
+			else {
+				table[index].temp_no = temp_no;
+				table[index].toChange = toChange;
+				index = (index+1) % 1000;
+				if(num<1000)num++;
+			}
 			// delete this code
-			if(pre == NULL) {
-				p = p->next;
-				icHead = p;
-			}
-			else{
-				p = p->next;
-				pre->next = p;
-				p->prev = pre;
-			}
+			struct InterCodeNode* d = p;
+			p = p->next;
+			del_code(d);
 		}
-		else {
-			pre = p;
+		else{
 			p = p->next;
 		}
 	}
@@ -345,7 +363,6 @@ void optimize_algebra() {
 }
 
 void remove_equation() {
-	struct InterCodeNode* pre = NULL;
 	struct InterCodeNode* p = icHead;
 	while(p != NULL ) {
 		bool autoAdd = true;
@@ -355,20 +372,13 @@ void remove_equation() {
 
 			if(left->kind == right->kind && left->u.value == right->u.value) {
 				// delete this code
-				if(pre == NULL) {
-					p = p->next;
-					icHead = p;
-				}
-				else {
-					p = p->next;
-					pre->next = p;
-					if(p != NULL) p->prev = pre;
-				}
+				struct InterCodeNode* d = p;
+				p = p->next;
+				del_code(d);
 				autoAdd = false;
 			}
 		}
 		if(autoAdd) {
-			pre = p;
 			p = p->next;
 		}
 	}
@@ -412,11 +422,11 @@ void remove_extralabel() {
 		}
 	}		
 #ifdef DEBUG
-	printf("table:\n");
-	int i = 0;
-	for(;i<num;i++){
-		printf("%d	%d\n", table[i].useless, table[i].jumpto);
-	}
+	//printf("table:\n");
+	//int i = 0;
+	//for(;i<num;i++){
+	//	printf("%d	%d\n", table[i].useless, table[i].jumpto);
+	//}
 #endif
 
 	// change the label no
@@ -469,15 +479,14 @@ void remove_extralabel() {
 		}
 	}
 #ifdef DEBUG
-	printf("used table:\n");
-	i = 0;
-	for(;i<used_num;i++){
-		printf("%d\n", used[i]);
-	}
+	//printf("used table:\n");
+	//i = 0;
+	//for(;i<used_num;i++){
+	//	printf("%d\n", used[i]);
+	//}
 #endif
 	// delete useless LABEL
 	p = icHead;
-	struct InterCodeNode* pre = NULL;
 	while(p!=NULL) {
 		if(p->code.kind ==LABELOP) {
 			int label = p->code.u.sigop.op->u.var_no;
@@ -487,23 +496,15 @@ void remove_extralabel() {
 			}
 			if(i == used_num) {
 				//delete this code
-				if(pre == NULL) {
-					p = p->next;
-					icHead = p;
-				}
-				else{
-					p = p->next;
-					pre->next = p;
-					p->prev = pre;
-				}
+				struct InterCodeNode* d = p;
+				p = p->next;
+				del_code(d);
 			}
 			else {
-				pre = p;
 				p = p->next;
 			}
 		}
 		else {
-			pre = p;
 			p = p->next;
 		}
 	}
