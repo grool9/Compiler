@@ -230,7 +230,7 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 			struct Symbol* sym = lookupVariable(id->lexeme);
 			
 			Operand right = NULL;
-			if(sym->type->kind == _STRUCTURE_)right = newOperand(ADDRESS, sym->var_no);
+			if(sym->type->kind == _STRUCTURE_&&sym->ispointer == false)right = newOperand(ADDRESS, sym->var_no);
 			else right = newOperand(VARIABLE, sym->var_no);
 
 			return newInterCodeNode(ASSIGN, place, right, NULL, NULL,0);
