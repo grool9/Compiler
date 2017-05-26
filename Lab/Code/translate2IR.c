@@ -147,6 +147,61 @@ Operand clean_temp(struct InterCodeNode* p) {
 	return NULL;//不能换
 }
 
+int countStructSize(FieldList p) {
+	int size = 0;
+	for(;p!=NULL;p = p->tail) {
+		if(p->type->kind == _BASIC_) size += 4;
+		else if(p->type->kind == _ARRAY_) {
+			printf("cannot translate array.\n");
+			exit(0);
+		}
+		else if(p->type->kind == _STRUCTURE_) size += countStructSize(p->type->u.structure);
+	}
+	return size;
+}
+
+int get_id_list(struct Node* exp1, char* id_list[], int size) {
+	if(exp1 == NULL)return size;
+
+	if(exp1->rule == Exp__ID) {
+		id_list[size] = exp1->child->lexeme;
+		size ++;
+	}
+	else if(exp1->rule == Exp__Exp_DOT_ID) {
+		struct Node* e = exp1->child;
+		struct Node* id = e->nextSibling->nextSibling;
+
+		size = get_id_list(e, id_list, size);
+
+		id_list[size] = id->lexeme;
+		size++;
+	}
+	return size;
+}
+
+int getOffset(char* id_list[], int size) {
+	if(size == 0)return 0;
+
+	struct Symbol* sym = lookupVariable(id_list[0]);
+	FieldList s = sym->type->u.structure;
+
+	int offset = 0;
+	int i =1;
+	for(;i<size;i++) {
+		for(;s!=NULL;s=s->tail) {
+			if(strcmp(s->name, id_list[i])==0)break;
+			else if(s->type->kind == _BASIC_)offset += 4;
+			else if(s->type->kind ==_ARRAY_){
+				printf("cannot translate array\n");
+				exit(0);
+			}
+			else if(s->type->kind == _STRUCTURE_) offset += countStructSize(s->type->u.structure);
+		}
+		s = s->type->u.structure;
+	}
+	return offset;
+}
+
 /*
  * translate functions
  */
@@ -184,51 +239,63 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 			struct Node* exp1 = root->child;
 			struct Node* exp2 = exp1->nextSibling->nextSibling;
 
-			// variable
-			struct Node* variable = exp1->child;	
-			struct Symbol* sym = lookupVariable(variable->lexeme);
-			Operand var = newOperand(VARIABLE, sym->var_no);
-		
 			struct InterCodeNode* code = NULL;
 			if(exp1->rule == Exp__ID) {
-				// OPTIMIZATION
-				struct InterCodeNode* code1 = translate_Exp(exp2, var);
+				struct Node* id = exp1->child;
+				// variable
+				struct Symbol* sym = lookupVariable(id->lexeme);
+				Operand var = newOperand(VARIABLE, sym->var_no);
 
-				struct InterCodeNode* code2 = NULL;
-				if(place != NULL)code2 = newInterCodeNode(ASSIGN, place, var, NULL, NULL,0);
+				// code1
+				Operand t1 = new_temp();
+				struct InterCodeNode* code1 = translate_Exp(exp2, t1);
+			
+				// OPTIMIZATION
+				Operand v1 = clean_temp(code1);
+				if(v1 == NULL) v1 = t1;
+				else code1 = NULL;
+
+				// code2
+				struct InterCodeNode* c1 = newInterCodeNode(ASSIGN, var, v1, NULL, NULL, 0);
+				struct InterCodeNode* c2 = NULL;
+				if(place != NULL)c2 = newInterCodeNode(ASSIGN, place, var, NULL, NULL,0);
+				struct InterCodeNode* code2 = concat(2, c1, c2);
 
 				code = concat(2, code1, code2);
 			}
 			else if(exp1->rule == Exp__Exp_DOT_ID) {
-				Type t = sym->type;
-				assert(t->kind == _STRUCTURE_);
-				FieldList structure = t->u.structure;
+				char* id_list[100];
+				int size = get_id_list(exp1, id_list, 0);
+				int offset = getOffset(id_list,size);
 
+	            struct Symbol* sym = lookupVariable(id_list[0]);
+	            int var_number = sym->var_no;
+
+				Operand address = newOperand(ADDRESS, var_number);
 				struct InterCodeNode* code1 = NULL;
-				struct InterCodeNode* code2 = NULL;
-				// find the field
-				struct Node* field = variable->nextSibling->nextSibling;
-				char* name = field->lexeme;
-				int count = 0;
-				FieldList p = structure;
-				for(; p != NULL; p = p->tail, count++) {
-					if(strcmp(name, p->name) == 0)break;
-				}
-				
-				Operand temp1 = new_temp();
-				Operand v = newOperand(ADDRESS, var->u.var_no);
-				if(count == 0) {
-					code1 = newInterCodeNode(ASSIGN, temp1, v, NULL, NULL, 0);
+				Operand temp = new_temp();
+				if(offset == 0){
+					code1 = newInterCodeNode(ASSIGN, temp, address, NULL, NULL, 0);
 				}
 				else {
-					Operand constantsize = newOperand(CONSTANT, count*4);
-					code1 = newInterCodeNode(ADD, temp1, v, constantsize, NULL, 0);
+					Operand cst = newOperand(CONSTANT, offset);
+					code1 = newInterCodeNode(ADD, temp, address, cst, NULL, 0);
 				}
 
-				Operand place = newOperand(TPOINTER, temp1->u.var_no);
-				code2 = translate_Exp(exp2, place);
+				Operand operand = newOperand(TPOINTER, temp->u.var_no);
 
-				code = concat(2, code1, code2);
+				Operand t1 = new_temp();
+				struct InterCodeNode* code2 = translate_Exp(exp2, t1);
+				//OPTIMIZATION
+				Operand v1 = clean_temp(code1);
+				if(v1 == NULL) v1 = t1;
+				else code2 = NULL;
+
+				struct InterCodeNode* code3 = newInterCodeNode(ASSIGN, operand, v1, NULL, NULL, 0);
+				
+				struct InterCodeNode* code4 = NULL;
+				if(place != NULL)code4 = newInterCodeNode(ASSIGN, place, operand, NULL, NULL, 0);
+				code = concat(4,code1, code2, code3, code4);
 			}
 			else {
 				printf("Cannot translate: Code contains variables of multi-dimensional array type or parameters of array type.\n");
@@ -356,58 +423,32 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 		case Exp__Exp_DOT_ID: {
 			if(place == NULL) return NULL;
 
-			struct Node* exp = root->child;
-
-			Operand t1 = new_temp();
-			struct InterCodeNode* code = translate_Exp(exp, t1);
-
-			printType(exp->type);
-			exit(0);
-			//struct Node* id1 = root->child->child;// must be id !!!!!!!NEED
-/*			struct Node* id2 = root->child->nextSibling->nextSibling;
+			char* id_list[100];
+			int size = get_id_list(root, id_list, 0);
+			int offset = getOffset(id_list,size);
 			
-			struct Symbol* sym = lookupVariable(id1->lexeme);
-			Type type = sym->type;
-			int var_no = sym->var_no;
-
-			assert(type->kind == _STRUCTURE_);
-
-			FieldList structure = type->u.structure;
-			// find the field
-			char* name = id2->lexeme;
-			FieldList p = structure;
-			int count = 0;
-			for(; p != NULL; p = p->tail,count++) {
-				if(strcmp(name, p->name)==0) break;
-			}
-
-			struct InterCodeNode* code = NULL;
-			if(count == 0) {
-				Operand op = newOperand(VPOINTER, var_no);
-				code = newInterCodeNode(ASSIGN, place, op, NULL, NULL,0);	
+			struct Symbol* sym = lookupVariable(id_list[0]);
+			int var_number = sym->var_no;
 #ifdef DEBUG
-	//printf(",,,,,,DOT\n");
-	//printOp(t);
-	//printOp(op);
-	//outputIR(code);
+	//printf("offset:%d\n",offset);
 #endif
+			struct InterCodeNode* code = NULL;
+			if(offset == 0){
+				Operand op = newOperand(VPOINTER, var_number);
+				code = newInterCodeNode(ASSIGN, place, op, NULL, NULL, 0);
 			}
 			else {
-				Operand t1 = new_temp();
-				Operand op1 = newOperand(VARIABLE, var_no);
-				Operand op2 = newOperand(CONSTANT, count * 4);
-				struct InterCodeNode* code1 = newInterCodeNode(ADD, t1, op1, op2, NULL,0);
-				Operand op = newOperand(TPOINTER, t1->u.var_no);//debuged ~
-				struct InterCodeNode* code2 = newInterCodeNode(ASSIGN, place, op, NULL, NULL,0);
+				Operand temp = new_temp();
+				Operand var = newOperand(VARIABLE, var_number);
+				Operand cst = newOperand(CONSTANT, offset);
+				struct InterCodeNode* code1 = newInterCodeNode(ADD, temp, var, cst, NULL, 0);
 
+				Operand op = newOperand(TPOINTER, temp->u.var_no);
+				struct InterCodeNode* code2 = newInterCodeNode(ASSIGN, place, op, NULL, NULL, 0);
 				code = concat(2, code1, code2);
 			}
-#ifdef DEBUG
-	//printf(",,,,,,DOT\n");
-	//outputIR(code);
-#endif
-			return code;*/
-			return NULL;
+			
+			return code;
 		}
 		default: {
 			printf("UNK EXP!\n");
@@ -727,16 +768,9 @@ struct InterCodeNode* translate_Dec(struct Node* root) {
 	struct Symbol* sym = lookupVariable(vardec->lexeme);
 	Operand place = newOperand(VARIABLE, sym->var_no);
 
-#ifdef DEBUG
-	//printType(sym->type);
-#endif
 	if(sym->type->kind == _STRUCTURE_){
 		FieldList structure = sym->type->u.structure;
-
-		int all_count = 0;
-		FieldList p = structure;
-		for(; p != NULL; p = p->tail, all_count++);
-		int size = all_count * 4;
+		int size = countStructSize(structure);
 		struct InterCodeNode* code1 = newInterCodeNode(DEC, place, NULL, NULL, NULL, size);
 		code = concat(2, code, code1);
 	}
