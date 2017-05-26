@@ -28,6 +28,7 @@ struct Symbol{
 
 	// lab3
 	int var_no;
+	bool ispointer;
 };
 
 struct Symbol* table[N];

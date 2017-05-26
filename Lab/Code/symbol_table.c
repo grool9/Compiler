@@ -83,6 +83,7 @@ void addElement(struct Node* node){
 
 	sym->addr = "\0";
 	sym->next=table[pos];
+	sym->ispointer = node->ispointer;
 	table[pos]=sym;
 }
 

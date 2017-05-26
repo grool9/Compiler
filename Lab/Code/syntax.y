@@ -201,7 +201,8 @@ struct Node* insert(Rule rule, char* token, int argc, ...){
 
 	//lab3
 	head->isConstant = false;
-	
+	head->ispointer = false;
+
 	struct Node* current=head;
 
 	va_list p;

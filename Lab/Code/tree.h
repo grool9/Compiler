@@ -107,6 +107,7 @@ struct Node{
 	// lab3
 	int value;
 	bool isConstant;
+	bool ispointer;
 };
 
 // none type

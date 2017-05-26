@@ -331,6 +331,7 @@ static void vardec__id(struct Node* root) {
 
 	id->idkind = _VARIABLE_;
 	id->type = root->type;
+	id->ispointer = root->ispointer;
 
 	char* name = id->lexeme;
 	
@@ -465,6 +466,7 @@ static void paramdec__specifier_vardec(struct Node* root) {
 
 	semanticAnalysis(specifier);
 
+	if(specifier->type->kind == _STRUCTURE_) vardec->ispointer = true;
 	vardec->type = specifier->type;
 	semanticAnalysis(vardec);
 

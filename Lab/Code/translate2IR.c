@@ -1,6 +1,6 @@
 #include "common.h"
 
-#define DEBUG
+//#define DEBUG
 
 // declaration
 struct InterCodeNode* translate_ExtDefList(struct Node* root);
@@ -247,19 +247,14 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 				Operand var = newOperand(VARIABLE, sym->var_no);
 
 				// code1
-				Operand t1 = new_temp();
-				struct InterCodeNode* code1 = translate_Exp(exp2, t1);
+				//Operand t1 = new_temp();
+				struct InterCodeNode* code1 = translate_Exp(exp2, var);
 			
-				// OPTIMIZATION
-				Operand v1 = clean_temp(code1);
-				if(v1 == NULL) v1 = t1;
-				else code1 = NULL;
-
 				// code2
-				struct InterCodeNode* c1 = newInterCodeNode(ASSIGN, var, v1, NULL, NULL, 0);
-				struct InterCodeNode* c2 = NULL;
-				if(place != NULL)c2 = newInterCodeNode(ASSIGN, place, var, NULL, NULL,0);
-				struct InterCodeNode* code2 = concat(2, c1, c2);
+				//struct InterCodeNode* c1 = newInterCodeNode(ASSIGN, var, v1, NULL, NULL, 0);
+				struct InterCodeNode* code2 = NULL;
+				if(place != NULL)code2 = newInterCodeNode(ASSIGN, place, var, NULL, NULL,0);
+				//struct InterCodeNode* code2 = concat(2, c1, c2);
 
 				code = concat(2, code1, code2);
 			}
@@ -271,7 +266,10 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 	            struct Symbol* sym = lookupVariable(id_list[0]);
 	            int var_number = sym->var_no;
 
-				Operand address = newOperand(ADDRESS, var_number);
+				Operand address = NULL;
+				if(sym->ispointer)address = newOperand(VARIABLE, var_number);
+				else address = newOperand(ADDRESS, var_number);
+				
 				struct InterCodeNode* code1 = NULL;
 				Operand temp = new_temp();
 				if(offset == 0){
@@ -287,7 +285,7 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 				Operand t1 = new_temp();
 				struct InterCodeNode* code2 = translate_Exp(exp2, t1);
 				//OPTIMIZATION
-				Operand v1 = clean_temp(code1);
+				Operand v1 = clean_temp(code2);
 				if(v1 == NULL) v1 = t1;
 				else code2 = NULL;
 
@@ -429,17 +427,19 @@ struct InterCodeNode* translate_Exp(struct Node* root, Operand place) {
 			
 			struct Symbol* sym = lookupVariable(id_list[0]);
 			int var_number = sym->var_no;
-#ifdef DEBUG
-	//printf("offset:%d\n",offset);
-#endif
+			
 			struct InterCodeNode* code = NULL;
 			if(offset == 0){
-				Operand op = newOperand(VPOINTER, var_number);
+				Operand op = NULL;
+				if(sym->ispointer) op = newOperand(VPOINTER, var_number);
+				else op = newOperand(VARIABLE, var_number);
 				code = newInterCodeNode(ASSIGN, place, op, NULL, NULL, 0);
 			}
 			else {
 				Operand temp = new_temp();
-				Operand var = newOperand(VARIABLE, var_number);
+				Operand var = NULL; 
+				if(sym->ispointer)var = newOperand(VARIABLE, var_number);
+				else var = newOperand(ADDRESS, var_number);
 				Operand cst = newOperand(CONSTANT, offset);
 				struct InterCodeNode* code1 = newInterCodeNode(ADD, temp, var, cst, NULL, 0);
 
@@ -910,7 +910,7 @@ struct InterCodeNode* translate_ParamDec(struct Node* root) {
 void generateIR(struct Node* root, char* filename) {
 	// preprocessing
 	//outputTree(root, 0);
-	//const_folding(root);
+	const_folding(root);
 	//printf("----------------------------------\n");
 	//outputTree(root, 0);
 

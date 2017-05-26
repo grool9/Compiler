@@ -1,6 +1,6 @@
 #include "common.h"
 
-#define DEBUG
+//#define DEBUG
 
 // block
 bool isHeadCode(struct InterCodeNode* code) {
@@ -61,12 +61,12 @@ void const_folding(struct Node* node) {
 					case Exp__Exp_AND_Exp:node->value = exp1->value && exp2->value;break;
 					case Exp__Exp_OR_Exp:node->value = exp1->value || exp2->value;break;
 					case Exp__Exp_RELOP_Exp:{
-						if(strcmp(op->lexeme, ">")==0)node->value = exp1->value > exp2->value;
-						else if(strcmp(op->lexeme, "<")==0)node->value = exp1->value < exp2->value;
-						else if(strcmp(op->lexeme, ">=")==0)node->value = exp1->value >= exp2->value;
-						else if(strcmp(op->lexeme, "<=")==0)node->value = exp1->value <= exp2->value;
-						else if(strcmp(op->lexeme, "==")==0)node->value = exp1->value == exp2->value;
-						else node->value = exp1->value != exp2->value;break;
+						if(strcmp(op->lexeme, ">")==0)node->value = (exp1->value > exp2->value);
+						else if(strcmp(op->lexeme, "<")==0)node->value = (exp1->value < exp2->value);
+						else if(strcmp(op->lexeme, ">=")==0)node->value = (exp1->value >= exp2->value);
+						else if(strcmp(op->lexeme, "<=")==0)node->value = (exp1->value <= exp2->value);
+						else if(strcmp(op->lexeme, "==")==0)node->value = (exp1->value == exp2->value);
+						else node->value = (exp1->value != exp2->value);break;
 					
 						break;
 					}
@@ -335,13 +335,6 @@ void remove_extralabel() {
 			}
 		}
 	}		
-#ifdef DEBUG
-	//printf("table:\n");
-	//int i = 0;
-	//for(;i<num;i++){
-	//	printf("%d	%d\n", table[i].useless, table[i].jumpto);
-	//}
-#endif
 
 	// change the label no
 	p = icHead;
@@ -392,13 +385,8 @@ void remove_extralabel() {
 
 		}
 	}
-#ifdef DEBUG
-	//printf("used table:\n");
-	//i = 0;
-	//for(;i<used_num;i++){
-	//	printf("%d\n", used[i]);
-	//}
-#endif
+
+
 	// delete useless LABEL
 	p = icHead;
 	while(p!=NULL) {

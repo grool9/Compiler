@@ -1,22 +1,22 @@
-int add(int temp[2])
+int add(int temp)
 {
-	return (temp[0] + temp[1]); 
+	return (temp + temp); 
 }
 
 int main()
 {
-	int op[2];
-	int r[1][2];
+	int op;
+	int r;
 	int i = 0, j = 0;
 	while (i < 2)
 	{
 		while (j < 2)
 		{
-			op[j] = i + j;
+			op = i + j;
 			j = j + 1;
 		}
-		r[0][i] = add(op);
-		write(r[0][i]);
+		r = add(op);
+		write(r);
 		i = i + 1;
 		j = 0;
 	}
