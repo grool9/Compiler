@@ -2,4 +2,8 @@
 
 C--: a C-like language
 
-lexical analysis, syntax analysis, semantic analysis, and intermediate code generation and optimization
+Implemented:
+1. lexical analysis
+2. syntax analysis
+3. semantic analysis
+4. intermediate code generation and optimization
